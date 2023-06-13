@@ -38,7 +38,6 @@ class Attention_Eqn3(nn.Module):
         
         # F_a has shape (batchsize, num_tokens, c=d_k)
         # F_s has shape (batchsize, h*w, c=d_k)
-        
         Q_a = self.W_a_Q(F_a)  # Get Query, shape (batchsize, numtokens, c=d_k)
         K_s = self.W_s_K(F_s)  # Get Key, shape (batchsize, hw, c=d_k)
         
@@ -103,7 +102,6 @@ class AgentLearningDecoder(nn.Module):
         # Get the "masked attention weight matrix"
         # S has shape (batchsize, numtokens, hw)
         S = self.attn_eqn3(F_a, F_s, M)
-        
         
         # Step 2: Get refined masks with Optimal Transport Algorithm
         # This part is the implementation of eqn.5 and eqn.6
