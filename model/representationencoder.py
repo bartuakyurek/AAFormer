@@ -17,10 +17,10 @@
 
 
 import math
+import copy
 import torch
 from torch import nn
 import torch.nn.functional as F
-import copy
 
 
 class RepresentationEncoder(nn.Module):

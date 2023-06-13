@@ -1,20 +1,20 @@
 import math
 import numpy as np
+
 import torch
 from torch import nn
 import torch.nn.functional as F
+
 from torchvision import datasets
 import torchvision.models as models
 import torchvision.transforms as transforms
-import torchvision.models as models
-import numpy as np
 
 
 class FeatureExtractor(nn.Module):
     def __init__(self, 
                  layers=50,             # number of layers for ResNet
                  reduce_dim = 256,      # reduced dimension stated in supplementary material of the paper
-                 c = 3                  # ?? output feature map dimension 
+                 c = 2048                  # ?? output feature map dimension 
                  ):
         super().__init__()
         self.c = c
