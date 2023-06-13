@@ -208,3 +208,4 @@ class AgentLearningDecoder(nn.Module):
         # TODO/Assumption: There is no specification about normalization or dropout 
         # If we follow the notations used in the paper, this file should contain everything 
         # paper provides. The flow of original decoder is different from the AAFormer's decoder figures.
+        return F_a_hat
