@@ -1,3 +1,6 @@
+# This file is the part of CENG 502 - Advanced Deep Learning, METU, Course Project
+# We implement attention mechanisms as given in the equations of the AAFormer paper.
+
 # Assumptions
 # --------------------------------------------------------------------------
 # 1-) Authors do not specify if the attention mechanism of Agent Learning Decoder 
@@ -19,7 +22,7 @@ import math
 import torch
 import torch.nn as nn
 
-# This attention mechanism is not the same with original self-attention.
+# This attention mechanism is not the same with original attention.
 # Here we implement eqn.3 and eqn.4, i.e. 
 # S = softmax(QK^T / sqrt(d_k) + M)
 # There will be another algorithm, Optimal Transport (eqn.5-6) before
@@ -65,8 +68,9 @@ class Attention_Eqn7(nn.Module):
         return self.ffn(torch.matmul(S_hat, V_s)) # Alternative to Eqn.7, w.r.t Fig.4(a)'s flow
         # return torch.matmul(self.ffn(S_hat), V_s) # Eqn.7, cannot be multiplied.
 
+
 # TODO: make this a decoder layer and add normalizations and dropouts
-class AgentLearningDecoder(nn.Module):
+class AgentLearningDecoderAttention(nn.Module):
     
     def __init__(self, cuda,  c, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
         super().__init__()
@@ -94,7 +98,7 @@ class AgentLearningDecoder(nn.Module):
         # for each token of the agent tokens.
         # N has shape (batchsize, numtokens, hw)
         N = M_s.repeat(1,self.num_tokens,1) 
-                
+                 
         M = torch.where(N == 1, 0, float('-inf'))
         # Debug: Check M has zeros in it
         # print ((M == 0).nonzero(as_tuple=True)[0])
@@ -106,7 +110,6 @@ class AgentLearningDecoder(nn.Module):
         # Step 2: Get refined masks with Optimal Transport Algorithm
         # This part is the implementation of eqn.5 and eqn.6
         # --------------------------------------------------------
-       
         lambd = self.reg # Regularization term for OT
         batchsize = len(S)
 
@@ -117,8 +120,8 @@ class AgentLearningDecoder(nn.Module):
         # Note: Optimal Transport is defined for 1D or 2D distributions
         # We need to compute it for every image in the batch separately
         # See example https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
-        # Note: Optimal transport matrix elements are all the same, 0.0003, we added a bypass option in case
-        # it causes a problem during training.
+        # Note: Optimal transport matrix elements are all the same, 0.0003, we added a bypass 
+        # option in case it causes a problem during training.
         S_hat = S
 
         if not bypass_ot:
@@ -191,3 +194,17 @@ class AgentLearningDecoder(nn.Module):
         F_a_hat = self.attn_eqn7(F_s, S_hat) 
         
         return F_a_hat
+    
+
+class AgentLearningDecoder(nn.Module):
+    def __init__(self, cuda,  c, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
+        super().__init__()
+        self.cross_attn = AgentLearningDecoderAttention(cuda,  c, num_layers, num_tokens, num_heads, sinkhorn_reg)
+
+    def forward(self, F_a, F_s, M_s, bypass_ot = False):
+        
+        F_a_hat = self.cross_attn(F_a, F_s, M_s, bypass_ot)
+
+        # TODO/Assumption: There is no specification about normalization or dropout 
+        # If we follow the notations used in the paper, this file should contain everything 
+        # paper provides. The flow of original decoder is different from the AAFormer's decoder figures.
