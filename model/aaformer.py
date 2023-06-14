@@ -30,10 +30,11 @@ class AAFormer(nn.Module):
 
         # Models of AAFormer 
         self.feature_extractor = FeatureExtractor(layers=50, reduce_dim=reduce_dim, c=c)
+        self.feature_extractor.eval()    # Freeze the backbone
+
         self.representation_encoder = RepresentationEncoder(c, hw, N, heads)
         self.agent_learning_decoder = AgentLearningDecoder(cuda, c, N, num_tokens, sinkhorn_reg = sinkhorn_reg)
         self.agent_matching_decoder = AgentMatchingDecoder(heads, c, feat_res=self.feat_res)
-
 
         # Last layers before prediction
         self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(int(math.log2(im_res/self.feat_res)))]
@@ -96,12 +97,19 @@ class AAFormer(nn.Module):
         # Assumption: Paper doesn't mention how they reshape the output of the last decoder,
         # so we assume we can use transposed convolution to upsample the output.
         
-        #print(F_q_bar.shape) ---> [batchsize, c, feat_res, feat_res]
+        #print(F_q_bar.shape) # ---> [batchsize, c, feat_res, feat_res]
         output = self.reshaper(F_q_bar)
-        #print(output.shape) ---> [batchsize, c, im_res, im_res]
+        #print(output.shape) # ---> [batchsize, c, im_res, im_res]
         
         output = self.conv3(output) #dec_feat_query)
         output = self.relu(output)
         output = self.conv1(output)
 
+        # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
+        # in range [0,1]. We assumed that we can normalize the predictions to [0,1] range and use a threshold to binarize the prediction.
+        min = torch.amin(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+        max = torch.amax(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+
+        output = (output - min) / (max - min)
+        output = torch.where(output >= 0.5, 1.0, 0.0)
         return output
