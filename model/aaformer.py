@@ -41,7 +41,8 @@ class AAFormer(nn.Module):
 
         self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(c//8, 3, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(c//8, 1, kernel_size=3, stride=1, padding=1, bias=False) 
+        # Note: Output channel is not 3 (rgb), but it is 1 since we are computing a binary mask in the end.
 
 
     def forward(self, query_img, supp_imgs, supp_masks):
