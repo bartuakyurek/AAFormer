@@ -16,7 +16,10 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 class AgentMatchingDecoder(nn.Module):
-    def __init__(self, heads, c, dropout = 0.1):
+    # c: hidden dimensions (see c in the paper notation)
+    # feat_res: Resolution of feature space (i.e. h and w, assuming h = w)
+    # im_res: Resolution of original image
+    def __init__(self, heads, c, feat_res, im_res, dropout = 0.1):
         super().__init__()
         
         self.c = c
@@ -25,7 +28,7 @@ class AgentMatchingDecoder(nn.Module):
         
         self.qa_linear = nn.Linear(c, c)
         self.ks_linear = nn.Linear(c, c)
-        
+
         self.qq_linear = nn.Linear(c, c)
         self.ka_linear = nn.Linear(c, c)
         
@@ -34,13 +37,16 @@ class AgentMatchingDecoder(nn.Module):
         self.ffn = FeedForward(c)             
 
         self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
-
         self.relu = nn.ReLU(inplace=True)
-
         self.conv1 = nn.Conv2d(c//8, 3, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.dropout = nn.Dropout(dropout)
         self.out = nn.Linear(c, c)
+
+        num_reshape = int(math.log2(im_res/feat_res))
+        self.output_res = im_res
+        self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(num_reshape)]
+        self.reshaper = nn.Sequential(*self.reshapers)
     
     def forward(self,
                 tok_agent,              # agent tokens, F_a_head
@@ -53,9 +59,9 @@ class AgentMatchingDecoder(nn.Module):
         hw = enc_feat_supp.shape[1]
 
         qa = self.qa_linear(tok_agent)#.view(bs, -1, self.h, self.d_k)
-        print("qa.shape = ", qa.shape)     
+        #print("qa.shape = ", qa.shape)     
         ks = self.ks_linear(enc_feat_supp)#.view(bs, -1, self.h, self.d_k)
-        print("ks.shape = ", ks.shape)
+        #print("ks.shape = ", ks.shape)
 
         qq = self.qa_linear(enc_feat_query)#.view(bs, -1, self.h, self.d_k)
         ka = self.ka_linear(tok_agent)#.view(bs, -1, self.h, self.d_k)
@@ -83,8 +89,8 @@ class AgentMatchingDecoder(nn.Module):
         #scores_qa = torch.reshape(scores_qa, (bs, -1, hw))
 
         ####
-        print("scores_as.shape = ", scores_as.shape)
-        print("scores_qa.shape = ", scores_qa.shape)
+        #print("scores_as.shape = ", scores_as.shape)
+        #print("scores_qa.shape = ", scores_qa.shape)
 
         
 
@@ -95,7 +101,7 @@ class AgentMatchingDecoder(nn.Module):
                 align_mat[:,i,j] = (torch.argmax(scores_as[:,:,i], dim=-1) == torch.argmax(scores_qa[:,j,:], dim=-1))
 
         align_mat = (align_mat - 1) * 1e6
-        print("align_mat.shape = ", align_mat.shape)
+        #print("align_mat.shape = ", align_mat.shape)
         #print("align_mat = ", align_mat)
 
         scores_sa = scores_as.transpose(-1,-2)
@@ -103,15 +109,21 @@ class AgentMatchingDecoder(nn.Module):
 
         scores_qs = F.softmax(torch.matmul(scores_sa, scores_aq) + align_mat)
 ###
-        print("scores_qs.shape = ", scores_qs.shape)
-        print("vs.shape = ", vs.shape)
+        #print("scores_qs.shape = ", scores_qs.shape)
+        #print("vs.shape = ", vs.shape)
 
         dec_feat_query = self.ffn(torch.matmul(scores_qs.transpose(1, 2), vs))
 
         dec_feat_query = dec_feat_query.contiguous().view(bs, self.c, int(math.sqrt(hw)), -1) 
-        print("dec_feat_query.shape = ", dec_feat_query.shape)
+        #print("dec_feat_query.shape = ", dec_feat_query.shape)
 
-        output = self.conv3(dec_feat_query)
+        # Fig.2, reshape/conv arrow before the last prediction box:
+        # Assumption: Paper doesn't mention how they reshape the output of the last decoder,
+        # so we assume we can use transposed convolution to upsample the output.
+        print(dec_feat_query.shape)
+        output = self.reshaper(dec_feat_query)
+        print(output.shape)
+        output = self.conv3(output) #dec_feat_query)
         output = self.relu(output)
         output = self.conv1(output)
    
