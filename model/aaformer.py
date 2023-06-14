@@ -46,7 +46,7 @@ class AAFormer(nn.Module):
         # Note: Output channel is not 3 (rgb), but it is 1 since we are computing a binary mask in the end.
 
 
-    def forward(self, query_img, supp_imgs, supp_masks):
+    def forward(self, query_img, supp_imgs, supp_masks, normalize=True):
 
         # STEP 1: Extract Features from the backbone model (ResNet)
         # -------------------------------------------------------------------------------------------------
@@ -101,15 +101,16 @@ class AAFormer(nn.Module):
         output = self.reshaper(F_q_bar)
         #print(output.shape) # ---> [batchsize, c, im_res, im_res]
         
-        output = self.conv3(output) #dec_feat_query)
+        output = self.conv3(output) 
         output = self.relu(output)
         output = self.conv1(output)
 
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
         # in range [0,1]. We assumed that we can normalize the predictions to [0,1] range and use a threshold to binarize the prediction.
-        min = torch.amin(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
-        max = torch.amax(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+        if normalize:
+            min = torch.amin(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+            max = torch.amax(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
 
-        output = (output - min) / (max - min)
-        output = torch.where(output >= 0.5, 1.0, 0.0)
+            output = (output - min) / (max - min)
+            output = torch.where(output >= 0.5, 1.0, 0.0)
         return output
