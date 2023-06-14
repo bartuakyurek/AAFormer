@@ -24,6 +24,8 @@ class AgentMatchingDecoder(nn.Module):
         
         self.c = c
         self.d_k = c // heads
+        self.d_k_sqrt = math.sqrt(self.d_k)
+
         self.h = heads
         
         self.qa_linear = nn.Linear(c, c)
@@ -43,6 +45,7 @@ class AgentMatchingDecoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.out = nn.Linear(c, c)
 
+        self.feat_res = int(feat_res)
         num_reshape = int(math.log2(im_res/feat_res))
         self.output_res = im_res
         self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(num_reshape)]
@@ -80,8 +83,8 @@ class AgentMatchingDecoder(nn.Module):
         #vs = vs.transpose(1,2)             
 
         # calculate scores
-        scores_as = torch.matmul(qa, ks.transpose(-2, -1)) /  math.sqrt(self.d_k) 
-        scores_qa = torch.matmul(qq, ka.transpose(-2, -1)) /  math.sqrt(self.d_k) 
+        scores_as = torch.matmul(qa, ks.transpose(-2, -1)) /  self.d_k_sqrt
+        scores_qa = torch.matmul(qq, ka.transpose(-2, -1)) /  self.d_k_sqrt
         
         #scores_as = scores_as.transpose(1, 2).contiguous().view(bs, hw, -1)
         #scores_qa = scores_qa.transpose(1, 2).contiguous().view(bs, -1, hw)
@@ -93,9 +96,9 @@ class AgentMatchingDecoder(nn.Module):
         #print("scores_qa.shape = ", scores_qa.shape)
 
         
-
+        # TODO: can we implement it without for loops? (to make it faster)
         # Aligning Matrix
-        align_mat = torch.empty(bs,hw,hw)
+        align_mat = tmp =  torch.empty(bs,hw,hw)
         for i in tqdm(range(hw)):
             for j in range(hw):
                 align_mat[:,i,j] = (torch.argmax(scores_as[:,:,i], dim=-1) == torch.argmax(scores_qa[:,j,:], dim=-1))
@@ -108,21 +111,20 @@ class AgentMatchingDecoder(nn.Module):
         scores_aq = scores_qa.transpose(-1,-2)
 
         scores_qs = F.softmax(torch.matmul(scores_sa, scores_aq) + align_mat)
-###
+
         #print("scores_qs.shape = ", scores_qs.shape)
         #print("vs.shape = ", vs.shape)
 
         dec_feat_query = self.ffn(torch.matmul(scores_qs.transpose(1, 2), vs))
-
-        dec_feat_query = dec_feat_query.contiguous().view(bs, self.c, int(math.sqrt(hw)), -1) 
+        dec_feat_query = dec_feat_query.contiguous().view(bs, self.c, self.feat_res, -1) 
         #print("dec_feat_query.shape = ", dec_feat_query.shape)
 
         # Fig.2, reshape/conv arrow before the last prediction box:
         # Assumption: Paper doesn't mention how they reshape the output of the last decoder,
         # so we assume we can use transposed convolution to upsample the output.
-        print(dec_feat_query.shape)
+        #print(dec_feat_query.shape)
         output = self.reshaper(dec_feat_query)
-        print(output.shape)
+        #print(output.shape)
         output = self.conv3(output) #dec_feat_query)
         output = self.relu(output)
         output = self.conv1(output)
