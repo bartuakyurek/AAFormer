@@ -19,7 +19,7 @@ class AgentMatchingDecoder(nn.Module):
     # c: hidden dimensions (see c in the paper notation)
     # feat_res: Resolution of feature space (i.e. h and w, assuming h = w)
     # im_res: Resolution of original image
-    def __init__(self, heads, c, feat_res, im_res, dropout = 0.1):
+    def __init__(self, heads, c, feat_res, dropout = 0.1):
         super().__init__()
         
         self.c = c
@@ -38,18 +38,12 @@ class AgentMatchingDecoder(nn.Module):
         
         self.ffn = FeedForward(c)             
 
-        self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(c//8, 3, kernel_size=3, stride=1, padding=1, bias=False)
-
+       
         self.dropout = nn.Dropout(dropout)
         self.out = nn.Linear(c, c)
 
-        self.feat_res = int(feat_res)
-        num_reshape = int(math.log2(im_res/feat_res))
-        self.output_res = im_res
-        self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(num_reshape)]
-        self.reshaper = nn.Sequential(*self.reshapers)
+        self.feat_res = feat_res
+
     
     def forward(self,
                 tok_agent,              # agent tokens, F_a_head
@@ -119,17 +113,7 @@ class AgentMatchingDecoder(nn.Module):
         dec_feat_query = dec_feat_query.contiguous().view(bs, self.c, self.feat_res, -1) 
         #print("dec_feat_query.shape = ", dec_feat_query.shape)
 
-        # Fig.2, reshape/conv arrow before the last prediction box:
-        # Assumption: Paper doesn't mention how they reshape the output of the last decoder,
-        # so we assume we can use transposed convolution to upsample the output.
-        #print(dec_feat_query.shape)
-        output = self.reshaper(dec_feat_query)
-        #print(output.shape)
-        output = self.conv3(output) #dec_feat_query)
-        output = self.relu(output)
-        output = self.conv1(output)
-   
-        return output
+        return dec_feat_query
 
 
 class FeedForward(nn.Module):
