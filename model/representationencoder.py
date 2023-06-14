@@ -1,7 +1,9 @@
 """
+    version: 23-06-13-21-00
+    
     Disclaimer: The following Transformer code is adapted from https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec
 
-    Class defiition:
+    Classes:
     1. RepresentationEncoder
     2. PositionalEncoder
     3. EncoderLayer
@@ -9,7 +11,7 @@
     5. Norm
     6. FeedForward
 
-    Method:
+    Methods:
     1. attention
         
 """
@@ -80,37 +82,34 @@ class EncoderLayer(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, heads, d_model, dropout = 0.1):
+    def __init__(self, heads, c, dropout = 0.1):
         super().__init__()
         
-        self.d_model = d_model
-        self.d_k = d_model // heads
+        self.c = c
+        self.d_k = c // heads
         self.h = heads
         
-        self.q_linear = nn.Linear(d_model, d_model)
-        self.v_linear = nn.Linear(d_model, d_model)
-        self.k_linear = nn.Linear(d_model, d_model)
+        self.q_linear = nn.Linear(c, c)
+        self.v_linear = nn.Linear(c, c)
+        self.k_linear = nn.Linear(c, c)
         self.dropout = nn.Dropout(dropout)
-        self.out = nn.Linear(d_model, d_model)
+        self.out = nn.Linear(c, c)
     
     def forward(self, q, k, v, mask=None):      
         bs = q.size(0)
         
-        # perform linear operation and split into h heads
         k = self.k_linear(k).view(bs, -1, self.h, self.d_k)
         q = self.q_linear(q).view(bs, -1, self.h, self.d_k)
         v = self.v_linear(v).view(bs, -1, self.h, self.d_k)
         
-        # transpose to get dimensions bs * h * sl * d_model
+        # transpose to get dimensions bs * h * sl * c
         k = k.transpose(1,2)
         q = q.transpose(1,2)
         v = v.transpose(1,2)
 
-        # calculate attention using function we will define next
         scores = attention(q, k, v, self.d_k, mask, self.dropout)
         
-        # concatenate heads and put through final linear layer
-        concat = scores.transpose(1,2).contiguous().view(bs, -1, self.d_model)
+        concat = scores.transpose(1,2).contiguous().view(bs, -1, self.c)
         
         output = self.out(concat)
     
@@ -122,7 +121,8 @@ class Norm(nn.Module):
         super().__init__()
     
         self.size = c
-        # create two learnable parameters to calibrate normalisation
+        
+        # two learnable parameters to calibrate normalisation
         self.alpha = nn.Parameter(torch.ones(self.size))
         self.bias = nn.Parameter(torch.zeros(self.size))
         self.eps = eps
@@ -135,10 +135,11 @@ class Norm(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, c, d_ff=2048, dropout = 0.1):
         super().__init__() 
-        # We set d_ff as a default to 2048
+
         self.linear_1 = nn.Linear(c, d_ff)
         self.dropout = nn.Dropout(dropout)
         self.linear_2 = nn.Linear(d_ff, c)
+
     def forward(self, x):
         x = self.dropout(F.relu(self.linear_1(x)))
         x = self.linear_2(x)
@@ -152,7 +153,8 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
     if mask is not None:
         mask = mask.unsqueeze(1)
         scores = scores.masked_fill(mask == 0, -1e9)
-        scores = F.softmax(scores, dim=-1)
+    
+    scores = F.softmax(scores, dim=-1)
     
     if dropout is not None:
         scores = dropout(scores)
