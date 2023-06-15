@@ -26,7 +26,7 @@ def init_agent_tokens(num_tokens, X, L, f_s):
     # (foreground_pixel, bacground_pixel)
     # in total, |X| x |L| pairs
     #dists_batch = torch.cdist(X, L)   # Get all the distances for K support ims
-
+   
     tokens = torch.empty((len(X), num_tokens, f_s.shape[1]))
     L_new = []
     # TODO: can we compute this jointly for all images in a batch?
@@ -34,7 +34,7 @@ def init_agent_tokens(num_tokens, X, L, f_s):
         L_single = L[i]      # L for a single image in a batch
 
         for k in range(num_tokens):
-            #dists = dists_batch[i]
+            
             dists = torch.from_numpy(cdist(X[i], L[i], 'euclidean'))   # Get all the distances for K support ims
 
             # See line 3 of Algorithm 1 in Supplementary Material:
@@ -43,7 +43,10 @@ def init_agent_tokens(num_tokens, X, L, f_s):
 
             # We don't care about the actual distance value, so it is named as _
             # we care about which location has the furthest distance p* 
-            _ , p_ind = torch.max(d_x, dim=0)
+            try:
+                _ , p_ind = torch.max(d_x, dim=0)
+            except:
+                print(">> ERROR tokens.py: d_x =", d_x.shape)
 
             p_furthest = X[i][p_ind, :]      # This is a location (x,y) of a pixel
             p_star = p_furthest.unsqueeze(0) # [2] --> [1,2] 

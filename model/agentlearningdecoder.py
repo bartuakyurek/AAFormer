@@ -31,7 +31,9 @@ class Attention_Eqn3(nn.Module):
     def __init__(self, hidden_dims):
         super().__init__()
         
+
         self.d_k = hidden_dims
+        self.d_k_sqrt = math.sqrt(self.d_k)
         self.W_a_Q = nn.Linear(hidden_dims, hidden_dims)
         self.W_s_K = nn.Linear(hidden_dims, hidden_dims)
     
@@ -47,7 +49,7 @@ class Attention_Eqn3(nn.Module):
         # Transposed Key has shape (batchsize, c=d_k, hw)
         # Such that the result QK has shape (batchsize, numtokens, hw)
         # This corresponds to K x hw dimensions of M in eqn.4, see page 8 first sentence
-        QK = torch.matmul(Q_a, K_s.transpose(1,2)) / math.sqrt(self.d_k)
+        QK = torch.matmul(Q_a, K_s.transpose(1,2)) / self.d_k_sqrt
         S = self.softmax(QK + M)
         
         return S
@@ -76,7 +78,7 @@ class AgentLearningDecoderAttention(nn.Module):
         super().__init__()
         
         self.reg = sinkhorn_reg
-        self.d_k = c // num_heads
+        self.d_k = c #// num_heads # Assumption: this decoder has single-head attention, (nothing is mentioned in the paper)
         self.num_tokens = num_tokens
 
         self.attn_eqn3 = Attention_Eqn3(self.d_k)
@@ -154,6 +156,8 @@ class AgentLearningDecoderAttention(nn.Module):
                 # We assumed T*1 is the multiplication of [KxN][Nx1] --> [Kx1] 
                 # T.T * 1 is [NxK][Kx1] --> [Nx1] in eqn.6. 
                 # Hence, a has dimension K, b has dimension N. 
+                
+                #with torch.no_grad():
                 a = (1/self.num_tokens) * torch.ones(self.num_tokens)
                 b = (1/num_fg_pix) * torch.ones(num_fg_pix)
                 T_single = ot.sinkhorn(a, b, cost_mat, lambd, numItermax=1000) # has shape (numtokens, num_fg_pix)
