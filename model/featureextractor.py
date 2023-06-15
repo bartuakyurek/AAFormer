@@ -36,7 +36,7 @@ class FeatureExtractor(nn.Module):
         
         s_mid_feat_list, s_high_feat_list, s_mask_list = self.support_feature_extraction(x_supp, mask)
         
-        prior_mask, f_s, m_s = self.prior_generation(s_high_feat_list, s_mask_list, q_high_feat, (q_mid_feat.shape[-1],q_mid_feat.shape[-2]))
+        prior_mask = self.prior_generation(s_high_feat_list, s_mask_list, q_high_feat, (q_mid_feat.shape[-1],q_mid_feat.shape[-2]))
         
         masked_ave_pool_list = self.masked_average_pooling(s_mid_feat_list, s_mask_list)
 
@@ -54,7 +54,7 @@ class FeatureExtractor(nn.Module):
             nn.Dropout2d(p=0.5)   
         )
 #        return q_mid_feat, q_high_feat, s_mid_feat_list, s_high_feat_list, s_mask_list, prior_mask, masked_ave_pool_list
-        return query_down(temp_query), supp_down(temp_supp), s_mask_list, f_s, m_s
+        return query_down(temp_query), supp_down(temp_supp), s_mask_list
 
     ################################
     #  model_set: sets the pretrained ResNet model layers according to the given label number
@@ -198,9 +198,7 @@ class FeatureExtractor(nn.Module):
             
             
             tmp_supp = tmp_supp_feat * tmp_mask                # masking layer4 output
-            f_s = tmp_supp  # return these for initial agent tokens
-            M_s = tmp_mask  # return these for initial agent tokens
-        
+          
             bsize, ch_sz, sp_sz, _ = high_query_feat.size()[:]                      # ch_sz = 2048, sp_sz = 7
 
       
@@ -220,7 +218,7 @@ class FeatureExtractor(nn.Module):
         corr_query_mask = torch.cat(corr_query_mask_list, 1).mean(1).unsqueeze(1)   # concat normalized prior mask list on (previosuly extended) dim=1, shape (b,self.shot,layer3.h,layer3.w) and calculate mean for dim=1 to form (b,1,layer3.h,layer3.w)   
         corr_query_mask = F.interpolate(corr_query_mask, size=mid_query_size, mode='bilinear', align_corners=True)  # interpolate
         
-        return corr_query_mask, f_s, M_s
+        return corr_query_mask
     #
     # end of prior generation 
     ############################################

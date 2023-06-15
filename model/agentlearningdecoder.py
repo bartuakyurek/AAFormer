@@ -205,7 +205,7 @@ class AgentLearningDecoder(nn.Module):
         super().__init__()
         self.cross_attn = AgentLearningDecoderAttention(cuda,  c, num_layers, num_tokens, num_heads, sinkhorn_reg)
 
-    def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot=1000):
+    def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot=10):
         
         F_a_hat = self.cross_attn(F_a, F_s, M_s, bypass_ot, max_iter_ot)
 

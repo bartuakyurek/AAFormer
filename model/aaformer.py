@@ -8,6 +8,7 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from model.tokens import init_agent_tokens
 from model.featureextractor import FeatureExtractor
@@ -51,7 +52,7 @@ class AAFormer(nn.Module):
 
         # STEP 1: Extract Features from the backbone model (ResNet)
         # -------------------------------------------------------------------------------------------------
-        F_Q, F_S, s_mask_list, f_s, M_s = self.feature_extractor(query_img, supp_imgs, supp_masks)
+        F_Q, F_S, s_mask_list = self.feature_extractor(query_img, supp_imgs, supp_masks)
 
         # STEP 2.1: Pass the features from encoder 
         # -------------------------------------------------------------------------------------------------
@@ -65,22 +66,26 @@ class AAFormer(nn.Module):
         # to combine the foreground pixels of images in a single tensor. We may pad the tensors
         # since max number of foreground pixels is equal to the image area.
         X, L = [], []
-        # TODO: This part assumes we are doing 1-shot learning
-        for i, m in enumerate(M_s):  # M_s has shape (batchsize, 1, 16, 16)
-            m = m.squeeze(0)  # Get a single mask, shape (16, 16)
+        # TODO: This part assumes we are doing 1-shot learning (i.e. first for loop runs just once)
+        for i, m_shot in enumerate(s_mask_list):  # every mask has shape (batchsize, 1, im_res, im_res)
+            M_s = F.interpolate(m_shot, size=(F_S.shape[2], F_S.shape[3]), mode='bilinear', align_corners=True) 
 
-            fg = np.where(m == 1.) # get foreground pixels
-            bg = np.where(m == 0.) # get background pixels
+            for s_mask in M_s:
             
-            # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
-            # (x,y) locations of foreground pixels
-            foreground_pix = torch.stack((torch.from_numpy(fg[0]), torch.from_numpy(fg[1])), dim=1)
-            background_pix = torch.stack((torch.from_numpy(bg[0]), torch.from_numpy(bg[1])), dim=1)
+                m = s_mask.squeeze(0)
+                fg = np.where(m == 1.) # get foreground pixels
+                bg = np.where(m == 0.) # get background pixels
+                
+                # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
+                # (x,y) locations of foreground pixels
+                foreground_pix = torch.stack((torch.from_numpy(fg[0]), torch.from_numpy(fg[1])), dim=1)
+                background_pix = torch.stack((torch.from_numpy(bg[0]), torch.from_numpy(bg[1])), dim=1)
 
-            X.append(foreground_pix)
-            L.append(background_pix)
-        # every token has [K,c] dim for every sample in a batch
-        agent_tokens = init_agent_tokens(self.num_tokens, X, L, f_s) 
+                X.append(foreground_pix)
+                L.append(background_pix)
+
+        # every token has [K,c] dim for every sample in a batch        
+        agent_tokens = init_agent_tokens(self.num_tokens, X, L, F_S) 
         
         
         # STEP 3: Pass initial agent tokens through Agent Learning Decoder and obtain agent tokens.
