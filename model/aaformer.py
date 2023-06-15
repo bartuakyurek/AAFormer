@@ -19,11 +19,12 @@ from model.agentmatchingdecoder import AgentMatchingDecoder
 class AAFormer(nn.Module):
     # cuda: bool 
     # num_tokens: int, number of agent tokens
-    def __init__(self, cuda, c, hw, N, heads, num_tokens, im_res, reduce_dim, bypass_ot=False, sinkhorn_reg=1e-1):
+    def __init__(self, cuda, c, hw, N, heads, num_tokens, im_res, reduce_dim, bypass_ot=False, sinkhorn_reg=1e-1, max_iter_ot=1000):
         super().__init__()
 
         # Some values to store
         self.bypass_ot = bypass_ot
+        self.max_iter_ot = max_iter_ot
         self.num_tokens = num_tokens 
         self.feat_res = int(math.sqrt(hw))
         self.output_res = im_res
@@ -85,7 +86,7 @@ class AAFormer(nn.Module):
         # STEP 3: Pass initial agent tokens through Agent Learning Decoder and obtain agent tokens.
         # -------------------------------------------------------------------------------------------------
         # Note: agent_tokens has shape (batchsize, num_tokens, c)
-        agent_tokens = self.agent_learning_decoder(agent_tokens, F_S_hat, M_s, bypass_ot=self.bypass_ot)
+        agent_tokens = self.agent_learning_decoder(agent_tokens, F_S_hat, M_s, bypass_ot=self.bypass_ot, max_iter_ot=self.max_iter_ot)
         
         # STEP 4: Pass agent tokens through Agent Matching Decoder
         # -------------------------------------------------------------------------------------------------
