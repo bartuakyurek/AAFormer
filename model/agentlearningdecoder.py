@@ -85,7 +85,7 @@ class AgentLearningDecoderAttention(nn.Module):
         self.attn_eqn7 = Attention_Eqn7(self.d_k, self.num_tokens)
         self.cuda = cuda
     
-    def forward(self, F_a, F_s, M_s, bypass_ot = False):
+    def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot = 1000):
         
         # Step 1: Masked Cross Attention between (F_a, F_s_hat)
         # This part is the implementation of eqn.3 and eqn.4
@@ -160,7 +160,7 @@ class AgentLearningDecoderAttention(nn.Module):
                 #with torch.no_grad():
                 a = (1/self.num_tokens) * torch.ones(self.num_tokens)
                 b = (1/num_fg_pix) * torch.ones(num_fg_pix)
-                T_single = ot.sinkhorn(a, b, cost_mat, lambd, numItermax=1000) # has shape (numtokens, num_fg_pix)
+                T_single = ot.sinkhorn(a, b, cost_mat, lambd, numItermax=max_iter_ot) # has shape (numtokens, num_fg_pix)
                 
                 # Debug: check the number of foreground pixels for every sample in a batch
                 # Output: they are all different.
@@ -205,9 +205,9 @@ class AgentLearningDecoder(nn.Module):
         super().__init__()
         self.cross_attn = AgentLearningDecoderAttention(cuda,  c, num_layers, num_tokens, num_heads, sinkhorn_reg)
 
-    def forward(self, F_a, F_s, M_s, bypass_ot = False):
+    def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot=1000):
         
-        F_a_hat = self.cross_attn(F_a, F_s, M_s, bypass_ot)
+        F_a_hat = self.cross_attn(F_a, F_s, M_s, bypass_ot, max_iter_ot)
 
         # TODO/Assumption: There is no specification about normalization or dropout 
         # If we follow the notations used in the paper, this file should contain everything 
