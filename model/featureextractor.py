@@ -1,20 +1,20 @@
 import math
 import numpy as np
-
 import torch
 from torch import nn
 import torch.nn.functional as F
-
 from torchvision import datasets
 import torchvision.models as models
 import torchvision.transforms as transforms
+import torchvision.models as models
+import numpy as np
 
 
 class FeatureExtractor(nn.Module):
     def __init__(self, 
                  layers=50,             # number of layers for ResNet
                  reduce_dim = 256,      # reduced dimension stated in supplementary material of the paper
-                 c = 2048                  # ?? output feature map dimension 
+                 c = 256                # output feature map dimension 
                  ):
         super().__init__()
         self.c = c
@@ -24,13 +24,15 @@ class FeatureExtractor(nn.Module):
             nn.Conv2d(self.fea_dim, reduce_dim, kernel_size=1, padding=0, bias=False),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5)   
-        )
-        
+        )   
+
+
     def forward(self,
-                x         : torch.Tensor,         # query image
-                x_supp    : torch.Tensor,         # support image
-                mask      : torch.Tensor,         # suport images masks
+                x         : torch.Tensor,         # query image          # query_img.shape = [batch,rgb,image.h,image.w]
+                x_supp    : torch.Tensor,         # support images       # supp_img.shape  = [batch,shot,rgb,image.h,image.w]
+                mask      : torch.Tensor,         # suport images masks  # supp_mask.shape = [batch,shot,image.h,image.w]
                 ):
+        
         
         q_mid_feat, q_high_feat = self.query_feature_extraction(x)
         
@@ -111,9 +113,9 @@ class FeatureExtractor(nn.Module):
     # outputs: mid_features:torch.Tensor (b,layer2.c+layer3.c,layer3.h,layer3.w) -> (b,1024+512,14,14), high_features: torch.Tensor (b,layer4.c,layer4.h,layer4.w) -> (b,2048,7,7)
     #
     def query_feature_extraction(self,
-                                 x     : torch.Tensor,     # input query image
+                                 x     : torch.Tensor,     # input query image,shape = [batch,rgb,image.h,image.w]
                                  ):        
-        
+
         with torch.no_grad():
             query_feat_0 = self.layer0(x)                       # (b,64,112,112)
             query_feat_1 = self.layer1(query_feat_0)            # (b,256,56,56)
@@ -135,23 +137,23 @@ class FeatureExtractor(nn.Module):
     ###################################
     # support_feature_extraction: extracts mid-level and high-level support images features from Resnet    
     #
-    # inputs: s_x: torch.Tensor, mask: torch.Tensor             
+    # inputs: s_i: torch.Tensor, mask: torch.Tensor             
     # outputs: mid_supp_list: [torch.Tensor], high_supp_list: [torch.Tensor], mask_list[Torch.Tensor]
     #
     def support_feature_extraction(self,
-                                   s_x   : torch.Tensor,         # support images
-                                   mask  : torch.Tensor,         # suport images masks 
+                                   s_i   : torch.Tensor,         # support images        supp_img.shape  = [batch,shot,rgb,image.h,image.w]
+                                   s_m   : torch.Tensor,         # suport images masks   supp_mask.shape = [batch,shot,image.h,image.w]
                                    ):
-    
+
         supp_feat_list = []
         final_supp_list = []
         mask_list = []
-        shot = s_x.shape[1]         # shot number
+        shot = s_i.shape[1]         # shot number
         for i in range(shot):                                    
-            #mask = (s_y[:,i,:,:] == 1).float().unsqueeze(1)           # defining mask
+            mask = (s_m[:,i,:,:] == 1).float().unsqueeze(1)           # defining mask
             mask_list.append(mask)                                    # list masks
             with torch.no_grad():                                     # feature extraction for support images
-                supp_feat_0 = self.layer0(s_x[:,i,:,:,:])
+                supp_feat_0 = self.layer0(s_i[:,i,:,:,:])
                 supp_feat_1 = self.layer1(supp_feat_0)
                 supp_feat_2 = self.layer2(supp_feat_1)
                 supp_feat_3 = self.layer3(supp_feat_2)
@@ -195,10 +197,9 @@ class FeatureExtractor(nn.Module):
         for i, tmp_supp_feat in enumerate(high_supp_list):           # final_supp_list: layer4 outputs
             resize_size = tmp_supp_feat.size(2)                       # layer4 size (7,7)
             tmp_mask = F.interpolate(mask_list[i], size=(resize_size, resize_size), mode='bilinear', align_corners=True)  # interpolate mask[i]
+
+            tmp_supp = tmp_supp_feat * tmp_mask                # masking layer4 output     
             
-            
-            tmp_supp = tmp_supp_feat * tmp_mask                # masking layer4 output
-          
             bsize, ch_sz, sp_sz, _ = high_query_feat.size()[:]                      # ch_sz = 2048, sp_sz = 7
 
       

@@ -21,6 +21,23 @@ import ot
 import math
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+# See supplementary material:
+# "The hidden dimension of MLP layer is set to three times of input hidden dimension"
+class FeedForward(nn.Module):
+    def __init__(self, c, dropout = 0.1):
+        super().__init__() 
+
+        self.linear_1 = nn.Linear(c, 3*c)
+        self.dropout = nn.Dropout(dropout)
+        self.linear_2 = nn.Linear(3*c, c)
+
+    def forward(self, x):
+        x = self.dropout(F.relu(self.linear_1(x)))
+        x = self.linear_2(x)
+        return x
+
 
 # This attention mechanism is not the same with original attention.
 # Here we implement eqn.3 and eqn.4, i.e. 
@@ -31,7 +48,6 @@ class Attention_Eqn3(nn.Module):
     def __init__(self, hidden_dims):
         super().__init__()
         
-
         self.d_k = hidden_dims
         self.d_k_sqrt = math.sqrt(self.d_k)
         self.W_a_Q = nn.Linear(hidden_dims, hidden_dims)
@@ -59,7 +75,9 @@ class Attention_Eqn7(nn.Module):
         super().__init__()
 
         self.W_s_V = nn.Linear(hidden_dims, hidden_dims)
-        self.ffn = nn.Linear(hidden_dims, hidden_dims) # num_tokens)
+        
+        #self.ffn = nn.Linear(hidden_dims, hidden_dims)
+        self.ffn = FeedForward(hidden_dims)
 
     def forward(self, F_s, S_hat):
 

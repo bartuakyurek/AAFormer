@@ -122,9 +122,9 @@ class FeedForward(nn.Module):
     def __init__(self, c, d_ff=2048, dropout = 0.1):
         super().__init__() 
 
-        self.linear_1 = nn.Linear(c, d_ff)
+        self.linear_1 = nn.Linear(c, 3*c) #d_ff)
         self.dropout = nn.Dropout(dropout)
-        self.linear_2 = nn.Linear(d_ff, c)
+        self.linear_2 = nn.Linear(3*c, c) #d_ff, c)
 
     def forward(self, x):
         x = self.dropout(F.relu(self.linear_1(x)))
