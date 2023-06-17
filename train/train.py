@@ -59,7 +59,7 @@ def train(
 
                 voutputs = model(v_query_img, v_supp_imgs, v_supp_masks, normalize=use_dice_loss)
 
-                vloss = loss_fn(voutputs, v_query_mask)
+                vloss = loss_fn(voutputs, v_query_mask.unsqueeze(1))
                 running_vloss += vloss
 
         avg_vloss = running_vloss / (i + 1)
@@ -76,6 +76,7 @@ def train(
         if avg_vloss < best_vloss:
             best_vloss = avg_vloss
             model_path = 'model_{}_{}'.format(timestamp, epoch_number)
-            torch.save(model.state_dict(), model_path)
+            #torch.save(model.state_dict(), model_path)
+            torch.save(model, model_path)
 
         epoch_number += 1

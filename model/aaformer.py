@@ -43,15 +43,15 @@ class AAFormer(nn.Module):
         self.agent_matching_decoder = AgentMatchingDecoder(self.device, heads, c, feat_res=self.feat_res).to(self.device)
 
         # Last layers before prediction
-        self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(int(math.log2(im_res/self.feat_res)))]
+        self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2).to(self.device) for i in range(int(math.log2(im_res/self.feat_res)))]
         self.reshaper = nn.Sequential(*self.reshapers)
 
         intermediate_dim = int(math.sqrt(c))
 #        self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv3 = nn.Conv2d(c, intermediate_dim, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv3 = nn.Conv2d(c, intermediate_dim, kernel_size=3, stride=1, padding=1, bias=False).to(self.device)
         self.relu = nn.ReLU(inplace=True)
 #        self.conv1 = nn.Conv2d(c//8, 1, kernel_size=3, stride=1, padding=1, bias=False) 
-        self.conv1 = nn.Conv2d(intermediate_dim, 1, kernel_size=1, stride=1, padding=1, bias=False) 
+        self.conv1 = nn.Conv2d(intermediate_dim, 1, kernel_size=1, stride=1, padding=0, bias=False).to(self.device)
 
         # Note: Output channel is not 3 (rgb), but it is 1 since we are computing a binary mask in the end.
 
@@ -100,7 +100,7 @@ class AAFormer(nn.Module):
         #print("M_s.shape = ", M_s.shape)         
 
         # every token has [K,c] dim for every sample in a batch        
-        agent_tokens_init = init_agent_tokens(self.num_tokens, M_s, X, L, F_S) 
+        agent_tokens_init = init_agent_tokens(self.device, self.num_tokens, M_s, X, L, F_S) 
         
         
         # STEP 3: Pass initial agent tokens through Agent Learning Decoder and obtain agent tokens.
@@ -119,16 +119,16 @@ class AAFormer(nn.Module):
         # so we assume we can use transposed convolution to upsample the output.
         
         #print(F_q_bar.shape) # ---> [batchsize, c, feat_res, feat_res]
-#        output = self.reshaper(F_q_bar)
-        #print(output.shape) # ---> [batchsize, c, im_res, im_res]
+        output = self.reshaper(F_q_bar)
+        print(output.shape) # ---> [batchsize, c, im_res, im_res]
 
-        output = F_q_bar
+        #output = F_q_bar
 
         output = self.conv3(output) 
         output = self.relu(output)
         output = self.conv1(output)
-
-        output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
+        print(output.shape)
+        # output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
         # output = torch.argmax(output, dim=1)
 
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
@@ -139,4 +139,4 @@ class AAFormer(nn.Module):
 
             output = (output - min) / (max - min)
             output = torch.where(output >= 0.5, 1.0, 0.0)
-        return output#.float()
+        return output

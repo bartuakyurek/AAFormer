@@ -20,7 +20,7 @@ from scipy.spatial.distance import cdist
 # L --> list[batchsize, num_background_pixels, 2] last dimension is (x,y) location
 # f_s --> tensor(batchsize, h, w, c) 
 # "h, w denote the height, width of the feature map." (Supplementary Material)
-def init_agent_tokens(num_tokens, M_s, X, L, f_s):
+def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
   
     # Compute euclidean distance between every pair
     # (foreground_pixel, bacground_pixel)
@@ -82,7 +82,7 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
 
         for k in range(num_tokens):
             
-            dists = torch.from_numpy(cdist(X[i], L[i], 'euclidean'))   # Get all the distances for K support ims
+            dists = torch.from_numpy(cdist(X[i].cpu(), L[i].cpu(), 'euclidean')).to(device)   # Get all the distances for K support ims
 
             # See line 3 of Algorithm 1 in Supplementary Material:
             # for a specific location x, min distance between x and all other locations in L
