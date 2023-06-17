@@ -61,7 +61,7 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
         
         for k in range(num_tokens):
             p_y = dist_mat[p_x].argmax()
-            print()
+            
             dist_mat[p_x, p_y] = -1 
             #print(L[b_ind])
             h, w = L[b_ind][p_y] 
