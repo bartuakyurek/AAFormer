@@ -18,7 +18,8 @@ def train(
     dataloader_trn,
     dataloader_val,
     loss_batch = 10,
-    device = "cpu"
+    device = "cpu",
+    use_dice_loss = True
 ):
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -32,7 +33,15 @@ def train(
 
         # Make sure gradient tracking is on, and do a pass over the data
         model.train(True)
-        avg_loss = train_one_epoch(model=model, optimizer=optimizer, epoch_index=epoch_number, dataloader_trn=dataloader_trn, loss_fn=loss_fn, loss_batch=loss_batch, tb_writer=writer, device=device)
+        avg_loss = train_one_epoch(model=model, 
+                                   optimizer=optimizer, 
+                                   epoch_index=epoch_number, 
+                                   dataloader_trn=dataloader_trn, 
+                                   loss_fn=loss_fn, 
+                                   loss_batch=loss_batch, 
+                                   tb_writer=writer, 
+                                   device=device,
+                                   use_dice_loss=use_dice_loss)
                  
         running_vloss = 0.0
         
