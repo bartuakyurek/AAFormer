@@ -173,6 +173,11 @@ class AgentLearningDecoderAttention(nn.Module):
                 # num_fg_pix is the number of foreground pixels, i.e. N in the eqn.5-6
                 num_fg_pix = S_fg.shape[1]  # Every sample in a batch has different num of foreground pixels
 
+                # Assumption: If the feature mask has no 1, we skip this image.
+                if(num_fg_pix == 0):
+                    print(">> WARNING: Sample with no feature mask occurred.")
+                    continue
+
                 # See the definition at https://pythonot.github.io/all.html#ot.sinkhorn
                 # and eqn.6 given in the paper, a = 1/K and b = 1/N
                 # a and b are multiplied by a matrix of ones as paper mentions
