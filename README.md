@@ -6,6 +6,8 @@ This readme file is an outcome of the [CENG502 (Spring 2023)](https://ceng.metu.
 
 @TODO: Introduce the paper (inc. where it is published) and describe your goal (reproducibility).
 
+In this paper, authors aim to address a few-shot segmentation (FSS) problem. They offer a new transformer-based architecture, called "Adaptive Agent Transformer" (AAFormer) that claims to surpass many state-of-the-art models, and it was published at ECCV 2022 conference. Our aim is to implement the AAFormer architecture with the guidance of the original paper and its supplementary material, and compare the results for reproducibility.
+
 ## 1.1. Paper summary
 
 @TODO: Summarize the paper, the method & its contributions in relation with the existing literature.
