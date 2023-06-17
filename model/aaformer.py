@@ -98,7 +98,7 @@ class AAFormer(nn.Module):
         M_s = torch.sum(F.interpolate(S_mask_shots, size=(F_S_h, F_S_w), mode='bilinear', align_corners=True), dim=1) 
         # M_s shape: b, layer4.h, layer4.w
         #print("M_s.shape = ", M_s.shape)         
-        
+
         # every token has [K,c] dim for every sample in a batch        
         agent_tokens_init = init_agent_tokens(self.num_tokens, M_s, X, L, F_S) 
         
