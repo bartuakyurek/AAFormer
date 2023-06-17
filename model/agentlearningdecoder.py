@@ -89,7 +89,7 @@ class Attention_Eqn7(nn.Module):
         # return torch.matmul(self.ffn(S_hat), V_s) # Eqn.7, cannot be multiplied.
 
 
-# TODO: make this a decoder layer and add normalizations and dropouts
+# This is where we implement Agent Learning Decoder's equations
 class AgentLearningDecoderAttention(nn.Module):
     
     def __init__(self, cuda,  c, hw, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
@@ -134,14 +134,14 @@ class AgentLearningDecoderAttention(nn.Module):
         lambd = self.reg # Regularization term for OT
         batchsize = len(S)
 
-        # TODO: can we flatten the batch dimension and compute OT? 
-        # but that would correlate the batches and OT would jointly
+        # Question: can we flatten the batch dimension and compute OT? 
+        # Assumption: but that would correlate the batches and OT would jointly
         # solve the problem. Instead, we want optimal transport within
         # a single image?
-        # Note: Optimal Transport is defined for 1D or 2D distributions
+        # Note: Optimal Transport library we use, is defined for 1D or 2D distributions
         # We need to compute it for every image in the batch separately
         # See example https://pythonot.github.io/auto_examples/plot_OT_2D_samples.html
-        # Note: Optimal transport matrix elements are all the same, 0.0003, we added a bypass 
+        # Note: Optimal transport matrix elements may be faulty, we added a bypass 
         # option in case it causes a problem during training.
         S_hat = S
 
