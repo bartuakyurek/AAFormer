@@ -27,37 +27,25 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
     # in total, |X| x |L| pairs
     #dists_batch = torch.cdist(X, L)   # Get all the distances for K support ims
     
-    # M_s shape: b, image.w, image.h
     batch_size, _, _ = M_s.shape
     for b in range(batch_size):
-        # M_s.shape = b,layer4.h,layer4.w
+        # M_s.shape = (batchsize, layer4.h, layer4.w)
         m = M_s[b,:,:]   # m.shape = layer4.h,layer4.w
-        
-        #plt.hist(m)
-        #plt.show()
-
+       
         # After interpolation, pixel values deteriorates from discrete 0 and 1.
         # We define 0.5 as the threshold for discriminating foregrouud from background.
-        fg = np.where(m.cpu() < 0.5) # get foreground pixels
-        bg = np.where(m.cpu() >= 0.5) # get background pixels
+        #fg = np.where(m.cpu() > 0.5)  # get foreground pixels
+        #bg = np.where(m.cpu() <= 0.5) # get background pixels
 
-        # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
+        # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
         # (x,y) locations of foreground pixels
-        foreground_pix = torch.stack((torch.from_numpy(fg[0]), torch.from_numpy(fg[1])), dim=1)
-        background_pix = torch.stack((torch.from_numpy(bg[0]), torch.from_numpy(bg[1])), dim=1)
-
-        #print(foreground_pix.shape)
-        #print(background_pix.shape)
-        #print(F_S[i,])
+        foreground_pix = torch.where(m > 0.5, 1.0, 0.0).nonzero() #torch.stack((torch.from_numpy(fg[0]), torch.from_numpy(fg[1])), dim=1)
+        background_pix = torch.where(m <= 0.5, 1.0, 0.0).nonzero() #torch.stack((torch.from_numpy(bg[0]), torch.from_numpy(bg[1])), dim=1)
 
         X.append(foreground_pix)
         L.append(background_pix)
-
-    #for xx,ll in zip(X,L):
-    #    print(f"xx.shape = {xx.shape}   ll.shape = {ll.shape}")
     
-    
-     # See line 3 of Algorithm 1 in Supplementary Material:
+    # See line 3 of Algorithm 1 in Supplementary Material:
     # for a specific location x, min distance between x and all other locations in L
     c = f_s.shape[-1]
     tokens = torch.empty(batch_size,num_tokens,c)
