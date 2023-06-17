@@ -95,16 +95,21 @@ class AgentLearningDecoderAttention(nn.Module):
     def __init__(self, cuda,  c, hw, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
         super().__init__()
         
+        self.cuda = cuda
+        self.device = "cuda" if cuda else "cpu"
+
         self.reg = sinkhorn_reg
         self.d_k = c #// num_heads # Assumption: this decoder has single-head attention, (nothing is mentioned in the paper)
         self.num_tokens = num_tokens
 
         self.attn_eqn3 = Attention_Eqn3(self.d_k, hw)
         self.attn_eqn7 = Attention_Eqn7(self.d_k, self.num_tokens)
-        self.cuda = cuda
+        
     
     def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot = 1000):
         
+        F_a = F_a.to(self.device)
+
         # Step 1: Masked Cross Attention between (F_a, F_s_hat)
         # This part is the implementation of eqn.3 and eqn.4
         # Return Part Mask S (see Fig.3 (a))
@@ -177,8 +182,8 @@ class AgentLearningDecoderAttention(nn.Module):
                 # Hence, a has dimension K, b has dimension N. 
                 
                 #with torch.no_grad():
-                a = (1/self.num_tokens) * torch.ones(self.num_tokens)
-                b = (1/num_fg_pix) * torch.ones(num_fg_pix)
+                a = (1/self.num_tokens) * torch.ones(self.num_tokens).to(self.device)
+                b = (1/num_fg_pix) * torch.ones(num_fg_pix).to(self.device)
                 T_single = ot.sinkhorn(a, b, cost_mat, lambd, numItermax=max_iter_ot) # has shape (numtokens, num_fg_pix)
                 
                 # Debug: check the number of foreground pixels for every sample in a batch

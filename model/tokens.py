@@ -38,8 +38,8 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
 
         # After interpolation, pixel values deteriorates from discrete 0 and 1.
         # We define 0.5 as the threshold for discriminating foregrouud from background.
-        fg = np.where(m < 0.5) # get foreground pixels
-        bg = np.where(m >= 0.5) # get background pixels
+        fg = np.where(m.cpu() < 0.5) # get foreground pixels
+        bg = np.where(m.cpu() >= 0.5) # get background pixels
 
         # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
         # (x,y) locations of foreground pixels

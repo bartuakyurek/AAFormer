@@ -12,6 +12,7 @@ import numpy as np
 
 class FeatureExtractor(nn.Module):
     def __init__(self, 
+                 device,
                  layers=50,             # number of layers for ResNet
                  reduce_dim = 256,      # reduced dimension stated in supplementary material of the paper
                  c = 256                # output feature map dimension 
@@ -25,6 +26,7 @@ class FeatureExtractor(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5)   
         )   
+        self.device = device
 
 
     def forward(self,
@@ -43,19 +45,20 @@ class FeatureExtractor(nn.Module):
         
         masked_ave_pool_list = self.masked_average_pooling(s_mid_feat_list, s_mask_list)
 
-        temp_supp = torch.cat([torch.cat([torch.cat(s_mid_feat_list, 1), torch.cat(masked_ave_pool_list, 1)],1), prior_mask],1)
+        temp_supp = torch.cat([torch.cat([torch.cat(s_mid_feat_list, 1), torch.cat(masked_ave_pool_list, 1)],1), prior_mask],1).to(self.device)
         supp_down = nn.Sequential(
             nn.Conv2d(temp_supp.shape[1], self.c, kernel_size=1, padding=0, bias=False),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5)   
-        ) 
+        ).to(self.device)
 
-        temp_query = torch.cat([q_mid_feat, torch.cat(masked_ave_pool_list, 1)],1)
+        temp_query = torch.cat([q_mid_feat, torch.cat(masked_ave_pool_list, 1)],1).to(self.device)
         query_down = nn.Sequential(
             nn.Conv2d(temp_query.shape[1], self.c, kernel_size=1, padding=0, bias=False),
             nn.ReLU(inplace=True),
             nn.Dropout2d(p=0.5)   
-        )
+        ).to(self.device)
+         
 #        return q_mid_feat, q_high_feat, s_mid_feat_list, s_high_feat_list, s_mask_list, prior_mask, masked_ave_pool_list
         return query_down(temp_query).permute(0, 2, 3, 1), supp_down(temp_supp).permute(0, 2, 3, 1), s_mask_list
 

@@ -21,9 +21,10 @@ class AgentMatchingDecoder(nn.Module):
     # c: hidden dimensions (see c in the paper notation)
     # feat_res: Resolution of feature space (i.e. h and w, assuming h = w)
     # im_res: Resolution of original image
-    def __init__(self, heads, c, feat_res, dropout = 0.1):
+    def __init__(self, device, heads, c, feat_res, dropout = 0.1):
         super().__init__()
         
+        self.device = device
         self.c = c
         self.d_k = c // heads
         self.d_k_sqrt = math.sqrt(self.d_k)
@@ -94,12 +95,12 @@ class AgentMatchingDecoder(nn.Module):
         
         # TODO: can we implement it without for loops? (to make it faster)
         # Aligning Matrix
-        align_mat = tmp =  torch.empty(bs,hw,hw)
+        align_mat =  torch.empty(bs,hw,hw)
         for i in range(hw):
             for j in range(hw):
                 align_mat[:,i,j] = (torch.argmax(scores_as[:,:,i], dim=-1) == torch.argmax(scores_qa[:,j,:], dim=-1))
 
-        align_mat = (align_mat - 1) * 1e6
+        align_mat = (align_mat.to(self.device) - 1) * 1e6
         #print("align_mat.shape = ", align_mat.shape)
         #print("align_mat = ", align_mat)
 

@@ -23,6 +23,9 @@ transform_mask = transforms.Compose(
 
 
 def image_plot(query_img, supp_imgs, supp_masks, preds):
+
+    preds = preds.cpu()
+
     fig = plt.figure()
     i = 0
     for q in range(query_img.shape[0]):

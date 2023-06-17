@@ -25,6 +25,8 @@ class AAFormer(nn.Module):
     def __init__(self, cuda, c, hw, N, heads, num_tokens, im_res, reduce_dim, bypass_ot=False, sinkhorn_reg=1e-1, max_iter_ot=1000):
         super().__init__()
 
+        self.device = "cuda" if cuda else "cpu"
+        
         # Some values to store
         self.bypass_ot = bypass_ot
         self.max_iter_ot = max_iter_ot
@@ -33,12 +35,12 @@ class AAFormer(nn.Module):
         self.output_res = im_res
 
         # Models of AAFormer 
-        self.feature_extractor = FeatureExtractor(layers=50, reduce_dim=reduce_dim, c=c)
+        self.feature_extractor = FeatureExtractor(self.device, layers=50, reduce_dim=reduce_dim, c=c).to(self.device)
         self.feature_extractor.eval()    # Freeze the backbone
 
-        self.representation_encoder = RepresentationEncoder(c, hw, N, heads)
-        self.agent_learning_decoder = AgentLearningDecoder(cuda, c, hw, N, num_tokens, sinkhorn_reg = sinkhorn_reg)
-        self.agent_matching_decoder = AgentMatchingDecoder(heads, c, feat_res=self.feat_res)
+        self.representation_encoder = RepresentationEncoder(c, hw, N, heads).to(self.device)
+        self.agent_learning_decoder = AgentLearningDecoder(cuda, c, hw, N, num_tokens, sinkhorn_reg = sinkhorn_reg).to(self.device)
+        self.agent_matching_decoder = AgentMatchingDecoder(self.device, heads, c, feat_res=self.feat_res).to(self.device)
 
         # Last layers before prediction
         self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(int(math.log2(im_res/self.feat_res)))]
