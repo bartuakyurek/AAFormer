@@ -6,6 +6,7 @@
 #######################################################################################
 
 # PyTorch TensorBoard support
+import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from train.trainoneepoch import train_one_epoch

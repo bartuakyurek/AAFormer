@@ -35,8 +35,12 @@ def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss
         #    print(">> Unexpected error occured, skipping this batch...")
         #    continue
         
-        # STEP 2: Compute Dice loss
-        loss = loss_fn(outputs, query_mask).requiresgrad(True)
+        # STEP 2: Compute loss (dice or cross entropy)
+        
+        #if use_dice_loss:
+        loss = loss_fn(outputs, query_mask.unsqueeze(1))#.requiresgrad(True)
+        #else:
+        #    loss = loss_fn(outputs, query_mask).requiresgrad(True)
         loss.backward()
 
         # Adjust learning weights
