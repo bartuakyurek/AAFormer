@@ -99,17 +99,19 @@ class DiceLoss(nn.Module):
         total_loss = 0
         predict = F.softmax(predict, dim=1)
 
-        shot = target.shape[1]
-        for i in range(shot):
-            if i != self.ignore_index:
-                target_shot = target[:,i,:,:]
-                #print("target_shot.shape = ", target_shot.shape)
-                #print("predict.shape =", predict.shape)
-                dice_loss = dice(predict, target_shot)
-                if self.weight is not None:
-                    assert self.weight.shape[0] == target.shape[1], \
-                        'Expect weight shape [{}], get[{}]'.format(target.shape[1], self.weight.shape[0])
-                    dice_loss *= self.weights[i]
-                total_loss += dice_loss
+#        shot = target.shape[1]
+#        for i in range(shot):
+#        if i != self.ignore_index:
+#            target_shot = target[:,i,:,:]
+            #print("target_shot.shape = ", target_shot.shape)
+            #print("predict.shape =", predict.shape)
+#            dice_loss = dice(predict, target_shot)
+        dice_loss = dice(predict, target)
+        if self.weight is not None:
+            assert self.weight.shape[0] == target.shape[1], \
+                'Expect weight shape [{}], get[{}]'.format(target.shape[1], self.weight.shape[0])
+            dice_loss *= self.weights[i]
+        total_loss += dice_loss
 
-        return total_loss/shot
+#        return total_loss/shot
+        return total_loss

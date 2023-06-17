@@ -131,7 +131,7 @@ class AAFormer(nn.Module):
 
 #####
         output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
-        #output = torch.argmax(output, dim=1)
+        output = torch.argmax(output, dim=1)
 #####
 
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
@@ -142,4 +142,4 @@ class AAFormer(nn.Module):
 
 #            output = (output - min) / (max - min)
 #            output = torch.where(output >= 0.5, 1.0, 0.0)
-        return output#.float()
+        return output.float()

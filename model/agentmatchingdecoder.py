@@ -107,7 +107,7 @@ class AgentMatchingDecoder(nn.Module):
         scores_sa = scores_as.transpose(-1,-2)
         scores_aq = scores_qa.transpose(-1,-2)
 
-        scores_qs = F.softmax(torch.matmul(scores_sa, scores_aq) + align_mat)
+        scores_qs = F.softmax((torch.matmul(scores_sa, scores_aq) + align_mat), dim=-1)
 
         #print("scores_qs.shape = ", scores_qs.shape)
         #print("vs.shape = ", vs.shape)
