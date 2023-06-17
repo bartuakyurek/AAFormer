@@ -49,7 +49,7 @@ def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
     # for a specific location x, min distance between x and all other locations in L
     c = f_s.shape[-1]
     tokens = torch.empty(batch_size,num_tokens,c)
-    """
+    
     for b_ind in range(batch_size):
         #print(X[b_ind].shape)
         #print(L[b_ind].shape)
@@ -104,6 +104,6 @@ def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
             tokens[i,k,:] = f_a_k
             
         L_new.append(L_single)
-    
+    """
     return tokens
     
