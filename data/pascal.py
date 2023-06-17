@@ -1,4 +1,10 @@
-r""" PASCAL-5i few-shot semantic segmentation dataset """
+""" PASCAL-5i few-shot semantic segmentation dataset
+
+    DISCLAIMER: This class is adopted from https://github.com/juhongm999/hsnet.
+    For our purposes, we have made minor changes in this file.
+    To see our edit, search for "edit" in the comments.
+    
+"""
 import os
 
 from torch.utils.data import Dataset
@@ -9,7 +15,7 @@ import numpy as np
 
 
 class DatasetPASCAL(Dataset):
-    def __init__(self, datapath, fold, transform, split, shot, use_original_imgsize):
+    def __init__(self, datapath, fold, transform, split, shot, use_original_imgsize, selected_class=-1):
 
         #super().__init__()
 
@@ -28,12 +34,17 @@ class DatasetPASCAL(Dataset):
         self.class_ids = self.build_class_ids()
         self.img_metadata = self.build_img_metadata()
         self.img_metadata_classwise = self.build_img_metadata_classwise()
+       
+        # CENG 502 Project Edit: Select a class index to train with a single class
+        if selected_class != -1:
+            self.img_metadata = self.img_metadata_classwise[self.class_ids[selected_class]]
+            print("Single class images size:", len(self.img_metadata))
 
     def __len__(self):
-        return len(self.img_metadata) if self.split == 'trn' else 1000
+        return len(self.img_metadata) #if self.split == 'trn' else 1000 # edit
 
     def __getitem__(self, idx):
-        idx %= len(self.img_metadata)  # for testing, as n_images < 1000
+        #idx %= len(self.img_metadata)  # for testing, as n_images < 1000 # edit
         query_name, support_names, class_sample = self.sample_episode(idx)
         query_img, query_cmask, support_imgs, support_cmasks, org_qry_imsize = self.load_frame(query_name, support_names)
 

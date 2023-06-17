@@ -9,20 +9,21 @@ from train.plot import image_plot
 
 
 def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss_batch, tb_writer, device, use_dice_loss):
-    running_loss = 0.
-    last_loss = 0.
+        running_loss = 0.
+        last_loss = 0.
 
-    # Here, we use enumerate(training_loader) instead of
-    # iter(training_loader) so that we can track the batch
-    # index and do some intra-epoch reporting
-    for i, batch in enumerate(dataloader_trn):
-        print(f"iteration {i+1}")
+        # Here, we use enumerate(training_loader) instead of
+        # iter(training_loader) so that we can track the batch
+        # index and do some intra-epoch reporting
+        for i, batch in enumerate(dataloader_trn):
+            print(f"iteration {i+1}")
 
-        # STEP 0: Get query image and support images with corresponding masks
-        query_img = batch['query_img'].to(device)
-        query_mask = batch['query_mask'].to(device)
-        supp_imgs = batch['support_imgs'].to(device)
-        supp_masks = batch['support_masks'].to(device)
+            # STEP 0: Get query image and support images with corresponding masks
+            query_img = batch['query_img'].to(device)
+            query_mask = batch['query_mask'].to(device)
+            supp_imgs = batch['support_imgs'].to(device)
+            supp_masks = batch['support_masks'].to(device)
+            break
                 
         
         # Zero your gradients for every batch!
@@ -57,4 +58,4 @@ def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss
             
             image_plot(query_img=query_img, query_mask=query_mask, preds=outputs)
             
-    return last_loss
+        return last_loss
