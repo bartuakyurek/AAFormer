@@ -8,7 +8,7 @@
 from train.plot import image_plot
 
 
-def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss_batch, tb_writer, device):
+def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss_batch, tb_writer, device, use_dice_loss):
     running_loss = 0.
     last_loss = 0.
 
@@ -30,13 +30,13 @@ def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss
         
         # STEP 1: Get predicted mask
         #try:
-        outputs = model(query_img, supp_imgs, supp_masks, normalize=True) # TODO: make normalize false if torch.CrossEntropy is used
+        outputs = model(query_img, supp_imgs, supp_masks, normalize=use_dice_loss)
         #except:
         #    print(">> Unexpected error occured, skipping this batch...")
         #    continue
         
         # STEP 2: Compute Dice loss
-        loss = loss_fn(outputs, query_mask)
+        loss = loss_fn(outputs, query_mask).requiresgrad(True)
         loss.backward()
 
         # Adjust learning weights
