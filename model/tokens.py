@@ -49,7 +49,7 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
     # for a specific location x, min distance between x and all other locations in L
     c = f_s.shape[-1]
     tokens = torch.empty(batch_size,num_tokens,c)
-
+    """
     for b_ind in range(batch_size):
         #print(X[b_ind].shape)
         #print(L[b_ind].shape)
@@ -72,8 +72,9 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
             #print(tokens.shape)
             #print(tokens)
 
-    """ 
-    tokens = torch.empty((len(X), num_tokens, f_s.shape[1]))
+   
+    """
+    # tokens = torch.empty((len(X), num_tokens, f_s.shape[1]))
     L_new = []
     # TODO: can we compute this jointly for all images in a batch?
     for i in range(len(X)):
@@ -98,12 +99,11 @@ def init_agent_tokens(num_tokens, M_s, X, L, f_s):
             p_star = p_furthest.unsqueeze(0) # [2] --> [1,2] 
             L_single = torch.cat([L_single, p_star], dim=0) # L = (B) U (P), see line 5 in Algorithm 1
 
-            print(f"p_furthest.data.shape = {p_furthest.data.shape}")
-            f_a_k = f_s[i, :, p_furthest.data[0].long().item(), p_furthest.data[1].long().item()]
+            f_a_k = f_s[i, p_furthest.data[0], p_furthest.data[1], :]
             
             tokens[i,k,:] = f_a_k
             
         L_new.append(L_single)
-    """
+    
     return tokens
     
