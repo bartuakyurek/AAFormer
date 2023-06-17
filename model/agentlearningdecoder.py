@@ -45,13 +45,13 @@ class FeedForward(nn.Module):
 # There will be another algorithm, Optimal Transport (eqn.5-6) before
 # we scale the attention with Value.
 class Attention_Eqn3(nn.Module):
-    def __init__(self, hidden_dims):
+    def __init__(self, hidden_dims, hw):
         super().__init__()
         
         self.d_k = hidden_dims
-        self.d_k_sqrt = math.sqrt(self.d_k)
-        self.W_a_Q = nn.Linear(hidden_dims, hidden_dims)
-        self.W_s_K = nn.Linear(hidden_dims, hidden_dims)
+        self.d_k_sqrt = 1 #math.sqrt(self.d_k)
+        self.W_a_Q = nn.Linear(hidden_dims, hw) #c,h*w
+        self.W_s_K = nn.Linear(hidden_dims, hw) #c,h*w
     
         self.softmax = nn.Softmax(dim=2)
     
@@ -92,14 +92,14 @@ class Attention_Eqn7(nn.Module):
 # TODO: make this a decoder layer and add normalizations and dropouts
 class AgentLearningDecoderAttention(nn.Module):
     
-    def __init__(self, cuda,  c, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
+    def __init__(self, cuda,  c, hw, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
         super().__init__()
         
         self.reg = sinkhorn_reg
         self.d_k = c #// num_heads # Assumption: this decoder has single-head attention, (nothing is mentioned in the paper)
         self.num_tokens = num_tokens
 
-        self.attn_eqn3 = Attention_Eqn3(self.d_k)
+        self.attn_eqn3 = Attention_Eqn3(self.d_k, hw)
         self.attn_eqn7 = Attention_Eqn7(self.d_k, self.num_tokens)
         self.cuda = cuda
     
@@ -110,6 +110,7 @@ class AgentLearningDecoderAttention(nn.Module):
         # Return Part Mask S (see Fig.3 (a))
         # --------------------------------------------------------
         
+        M_s = M_s.unsqueeze(1)
         # Flatten M_s  from shape (batchsize, 1, h, w)
         # to shape (batchsize, 1, h*w)
         M_s = torch.flatten(M_s, start_dim=2)
@@ -219,12 +220,13 @@ class AgentLearningDecoderAttention(nn.Module):
     
 
 class AgentLearningDecoder(nn.Module):
-    def __init__(self, cuda,  c, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
+    def __init__(self, cuda, c, hw, num_layers, num_tokens, num_heads=1, sinkhorn_reg = 1e-1):
         super().__init__()
-        self.cross_attn = AgentLearningDecoderAttention(cuda,  c, num_layers, num_tokens, num_heads, sinkhorn_reg)
+        self.cross_attn = AgentLearningDecoderAttention(cuda, c, hw, num_layers, num_tokens, num_heads, sinkhorn_reg)
 
     def forward(self, F_a, F_s, M_s, bypass_ot = False, max_iter_ot=10):
         
+        b, h, w = M_s.shape
         F_a_hat = self.cross_attn(F_a, F_s, M_s, bypass_ot, max_iter_ot)
 
         # TODO/Assumption: There is no specification about normalization or dropout 

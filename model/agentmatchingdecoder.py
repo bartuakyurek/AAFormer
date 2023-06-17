@@ -95,7 +95,7 @@ class AgentMatchingDecoder(nn.Module):
         # TODO: can we implement it without for loops? (to make it faster)
         # Aligning Matrix
         align_mat = tmp =  torch.empty(bs,hw,hw)
-        for i in tqdm(range(hw)):
+        for i in range(hw):
             for j in range(hw):
                 align_mat[:,i,j] = (torch.argmax(scores_as[:,:,i], dim=-1) == torch.argmax(scores_qa[:,j,:], dim=-1))
 

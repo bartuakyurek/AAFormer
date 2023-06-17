@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import matplotlib.pyplot as plt
+
 from model.tokens import init_agent_tokens
 from model.featureextractor import FeatureExtractor
 from model.representationencoder import RepresentationEncoder
@@ -35,16 +37,20 @@ class AAFormer(nn.Module):
         self.feature_extractor.eval()    # Freeze the backbone
 
         self.representation_encoder = RepresentationEncoder(c, hw, N, heads)
-        self.agent_learning_decoder = AgentLearningDecoder(cuda, c, N, num_tokens, sinkhorn_reg = sinkhorn_reg)
+        self.agent_learning_decoder = AgentLearningDecoder(cuda, c, hw, N, num_tokens, sinkhorn_reg = sinkhorn_reg)
         self.agent_matching_decoder = AgentMatchingDecoder(heads, c, feat_res=self.feat_res)
 
         # Last layers before prediction
         self.reshapers = [nn.ConvTranspose2d(c, c, kernel_size=2, stride=2) for i in range(int(math.log2(im_res/self.feat_res)))]
         self.reshaper = nn.Sequential(*self.reshapers)
 
-        self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
+        intermediate_dim = int(math.sqrt(c))
+#        self.conv3 = nn.Conv2d(c, c//8, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv3 = nn.Conv2d(c, intermediate_dim, kernel_size=3, stride=1, padding=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
-        self.conv1 = nn.Conv2d(c//8, 1, kernel_size=3, stride=1, padding=1, bias=False) 
+#        self.conv1 = nn.Conv2d(c//8, 1, kernel_size=3, stride=1, padding=1, bias=False) 
+        self.conv1 = nn.Conv2d(intermediate_dim, 2, kernel_size=1, stride=1, padding=1, bias=False) 
+
         # Note: Output channel is not 3 (rgb), but it is 1 since we are computing a binary mask in the end.
 
 
@@ -52,13 +58,26 @@ class AAFormer(nn.Module):
 
         # STEP 1: Extract Features from the backbone model (ResNet)
         # -------------------------------------------------------------------------------------------------
+        
+        # F_Q.shape = b, layer4.w, layer4.h, c -> 4, 16, 16, 328
+        # F_S.shape = b, layer4.w, layer4.h, c
+        # s_mask_list = list(b, shot, image.w, image.h) -> [4, 1, 128, 128]
         F_Q, F_S, s_mask_list = self.feature_extractor(query_img, supp_imgs, supp_masks)
+        #S_mask = torch.stack(s_mask_list, dim=1)  
+        S_mask_shots = torch.cat(s_mask_list, dim=1) # stack s_mask_list to a tensor -> b, shot, image.w, image.h -> 4, shot, 128, 128
+        #print("F_Q.shape = ", F_Q.shape)
+        #print("F_S.shape = ", F_S.shape)
+        #print("S_mask_shots.shape = ", S_mask_shots.shape)
 
         # STEP 2.1: Pass the features from encoder 
         # -------------------------------------------------------------------------------------------------
+        # F_Q_hat.shape = [b, layer4.w*layer4.h, c] -> [4, 256, 328]
+        # F_S_hat.shape = [b, layer4.w*layer4.h, c]
         F_S_hat = self.representation_encoder(F_S)
         F_Q_hat = self.representation_encoder(F_Q)
-        
+#        print("F_Q_hat.shape = ", F_Q_hat.shape)
+#        print("F_S_hat.shape = ", F_S_hat.shape)
+
         # STEP 2.2: Get Initial Agent Tokens
         # -------------------------------------------------------------------------------------------------
         # TODO: can we get rid of for loop?
@@ -67,31 +86,25 @@ class AAFormer(nn.Module):
         # since max number of foreground pixels is equal to the image area.
         X, L = [], []
         # TODO: This part assumes we are doing 1-shot learning (i.e. first for loop runs just once)
-        for i, m_shot in enumerate(s_mask_list):  # every mask has shape (batchsize, 1, im_res, im_res)
-            M_s = F.interpolate(m_shot, size=(F_S.shape[2], F_S.shape[3]), mode='bilinear', align_corners=True) 
-
-            for s_mask in M_s:
-            
-                m = s_mask.squeeze(0)
-                fg = np.where(m == 1.) # get foreground pixels
-                bg = np.where(m == 0.) # get background pixels
-                
-                # Create tensor with shape [num_foreground_pix, 2] where the last dimension has
-                # (x,y) locations of foreground pixels
-                foreground_pix = torch.stack((torch.from_numpy(fg[0]), torch.from_numpy(fg[1])), dim=1)
-                background_pix = torch.stack((torch.from_numpy(bg[0]), torch.from_numpy(bg[1])), dim=1)
-
-                X.append(foreground_pix)
-                L.append(background_pix)
-
+        #S_mask = torch.sum(S_mask_shots, dim=1)
+        
+        batch_size, shot, _, _ = S_mask_shots.shape
+        F_S_h, F_S_w = F_S.shape[1], F_S.shape[2]
+        
+        
+        #for s in range(shot):  # every mask has shape (batchsize, 1, im_res, im_res)
+        M_s = torch.sum(F.interpolate(S_mask_shots, size=(F_S_h, F_S_w), mode='bilinear', align_corners=True), dim=1) 
+        # M_s shape: b, layer4.h, layer4.w
+        #print("M_s.shape = ", M_s.shape)         
+        
         # every token has [K,c] dim for every sample in a batch        
-        agent_tokens = init_agent_tokens(self.num_tokens, X, L, F_S) 
+        agent_tokens_init = init_agent_tokens(self.num_tokens, M_s, X, L, F_S) 
         
         
         # STEP 3: Pass initial agent tokens through Agent Learning Decoder and obtain agent tokens.
         # -------------------------------------------------------------------------------------------------
         # Note: agent_tokens has shape (batchsize, num_tokens, c)
-        agent_tokens = self.agent_learning_decoder(agent_tokens, F_S_hat, M_s, bypass_ot=self.bypass_ot, max_iter_ot=self.max_iter_ot)
+        agent_tokens = self.agent_learning_decoder(agent_tokens_init, F_S_hat, M_s, bypass_ot=self.bypass_ot, max_iter_ot=self.max_iter_ot)
         
         # STEP 4: Pass agent tokens through Agent Matching Decoder
         # -------------------------------------------------------------------------------------------------
@@ -104,19 +117,27 @@ class AAFormer(nn.Module):
         # so we assume we can use transposed convolution to upsample the output.
         
         #print(F_q_bar.shape) # ---> [batchsize, c, feat_res, feat_res]
-        output = self.reshaper(F_q_bar)
+#        output = self.reshaper(F_q_bar)
         #print(output.shape) # ---> [batchsize, c, im_res, im_res]
-        
+
+#####
+        output = F_q_bar
+#####
         output = self.conv3(output) 
         output = self.relu(output)
         output = self.conv1(output)
 
+#####
+        output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
+        output = torch.argmax(output, dim=1)
+#####
+
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
         # in range [0,1]. We assumed that we can normalize the predictions to [0,1] range and use a threshold to binarize the prediction.
-        if normalize:
-            min = torch.amin(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
-            max = torch.amax(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+#        if normalize:
+#            min = torch.amin(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
+#            max = torch.amax(output, dim=(1,2,3)).unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1,1,output.shape[-2],output.shape[-1])
 
-            output = (output - min) / (max - min)
-            output = torch.where(output >= 0.5, 1.0, 0.0)
-        return output
+#            output = (output - min) / (max - min)
+#            output = torch.where(output >= 0.5, 1.0, 0.0)
+        return output.float()

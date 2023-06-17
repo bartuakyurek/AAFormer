@@ -47,14 +47,24 @@ class BinaryDiceLoss(nn.Module):
         self.reduction = reduction
 
     def forward(self, predict, target):
-        assert predict.shape[0] == target.shape[0], "predict & target batch size don't match"
+#####
+        #predict = predict.unsqueeze(1)
+        predict.requires_grad = True
+
+#####   
+        #print("predict.shape = ", predict.shape)
+        #print("target.shape = ", target.shape)
+    
+        assert predict.shape == target.shape, "predict & target batch size don't match"
+        
+        
         predict = predict.contiguous().view(predict.shape[0], -1)
         target = target.contiguous().view(target.shape[0], -1)
 
         num = torch.sum(torch.mul(predict, target), dim=1) + self.smooth
         den = torch.sum(predict.pow(self.p) + target.pow(self.p), dim=1) + self.smooth
 
-        loss = 1 - num / den
+        loss = 1 - (2 * num) / den
 
         if self.reduction == 'mean':
             return loss.mean()
@@ -84,18 +94,22 @@ class DiceLoss(nn.Module):
         self.ignore_index = ignore_index
 
     def forward(self, predict, target):
-        assert predict.shape == target.shape, 'predict & target shape do not match'
+        assert predict.shape[-2:] == target.shape[-2:], 'predict & target sizes do not match'
         dice = BinaryDiceLoss(**self.kwargs)
         total_loss = 0
         predict = F.softmax(predict, dim=1)
 
-        for i in range(target.shape[1]):
+        shot = target.shape[1]
+        for i in range(shot):
             if i != self.ignore_index:
-                dice_loss = dice(predict[:, i], target[:, i])
+                target_shot = target[:,i,:,:]
+                #print("target_shot.shape = ", target_shot.shape)
+                #print("predict.shape =", predict.shape)
+                dice_loss = dice(predict, target_shot)
                 if self.weight is not None:
                     assert self.weight.shape[0] == target.shape[1], \
                         'Expect weight shape [{}], get[{}]'.format(target.shape[1], self.weight.shape[0])
                     dice_loss *= self.weights[i]
                 total_loss += dice_loss
 
-        return total_loss/target.shape[1]
+        return total_loss/shot

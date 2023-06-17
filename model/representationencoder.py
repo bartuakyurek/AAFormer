@@ -34,7 +34,8 @@ class RepresentationEncoder(nn.Module):
         self.norm = Norm(c)
 
     def forward(self, feat, mask = None):
-        b_f, c_f, h_f, w_f = feat.shape
+        #b_f, c_f, h_f, w_f = feat.shape
+        b_f, h_f, w_f, c_f = feat.shape
         hw_f = h_f * w_f
 
         feat = feat.contiguous().view(b_f, c_f, -1).permute(0,2,1)

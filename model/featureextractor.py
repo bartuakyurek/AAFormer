@@ -38,6 +38,7 @@ class FeatureExtractor(nn.Module):
         
         s_mid_feat_list, s_high_feat_list, s_mask_list = self.support_feature_extraction(x_supp, mask)
         
+        #print("q_high_feat.shape = ", q_high_feat.shape)
         prior_mask = self.prior_generation(s_high_feat_list, s_mask_list, q_high_feat, (q_mid_feat.shape[-1],q_mid_feat.shape[-2]))
         
         masked_ave_pool_list = self.masked_average_pooling(s_mid_feat_list, s_mask_list)
@@ -56,7 +57,7 @@ class FeatureExtractor(nn.Module):
             nn.Dropout2d(p=0.5)   
         )
 #        return q_mid_feat, q_high_feat, s_mid_feat_list, s_high_feat_list, s_mask_list, prior_mask, masked_ave_pool_list
-        return query_down(temp_query), supp_down(temp_supp), s_mask_list
+        return query_down(temp_query).permute(0, 2, 3, 1), supp_down(temp_supp).permute(0, 2, 3, 1), s_mask_list
 
     ################################
     #  model_set: sets the pretrained ResNet model layers according to the given label number
@@ -129,7 +130,6 @@ class FeatureExtractor(nn.Module):
         mid_features = self.down(mid_features)                # down to query features to (b,256,h,w)
         
         high_features = query_feat_4
-
         return mid_features, high_features
     # 
     ###################################
@@ -192,6 +192,12 @@ class FeatureExtractor(nn.Module):
                          mid_query_size   : tuple,
                          ):
       
+        bsize, ch_sz, sp_sz, _ = high_query_feat.shape #size()[:]                      # ch_sz = 2048, sp_sz = 7     
+        high_query_feat = high_query_feat.contiguous().view(bsize, ch_sz, -1) # resize layer4 query output from 4 dims (b,c,h,w) to 3 dims (b,c,h*w)
+        high_query_feat_norm = torch.norm(high_query_feat, 2, 1, True)        # norm calculation: second order (2) over dimension=1 channel -> (b,1,h*w)
+
+
+        
         corr_query_mask_list = []
         cosine_eps = 1e-7
         for i, tmp_supp_feat in enumerate(high_supp_list):           # final_supp_list: layer4 outputs
@@ -200,22 +206,25 @@ class FeatureExtractor(nn.Module):
 
             tmp_supp = tmp_supp_feat * tmp_mask                # masking layer4 output     
             
-            bsize, ch_sz, sp_sz, _ = high_query_feat.size()[:]                      # ch_sz = 2048, sp_sz = 7
-
-      
-            high_query_feat = high_query_feat.contiguous().view(bsize, ch_sz, -1) # resize layer4 query output from 4 dims (b,c,h,w) to 3 dims (b,c,h*w)
-            high_query_feat_norm = torch.norm(high_query_feat, 2, 1, True)        # norm calculation: second order (2) over dimension=1 channel -> (b,1,h*w)
        
             tmp_supp = tmp_supp.contiguous().view(bsize, ch_sz, -1)   # resize masked layer_4 output from 4 dims (b,c,h,w) to 3 dims (b,c,h*w)
             tmp_supp = tmp_supp.contiguous().permute(0, 2, 1)         # change dimension order to (b,h*w,c) for bacth matrix multiplication, bmm
             tmp_supp_norm = torch.norm(tmp_supp, 2, 2, True)          # norm calculation: second order (2) over dimension=2 channel -> (b,h*w,1)
-
+            """
+            print(tmp_supp.shape)
+            print(high_query_feat.shape)
+            print(tmp_supp_norm.shape)
+            print(high_query_feat_norm.shape)
+            """
             similarity = torch.bmm(tmp_supp, high_query_feat)/(torch.bmm(tmp_supp_norm, high_query_feat_norm) + cosine_eps)   # cosine simmilarity (b,h*w,h*w) for all pixels
             similarity = similarity.max(1)[0].view(bsize, sp_sz*sp_sz)    # obtain max of cosine simm for dim=1 (all pixel dimension) and reshape them to get prior mask from (b,h*w,h*w) to (b,layer4.h,layer4.h)    
+               
             similarity = (similarity - similarity.min(1)[0].unsqueeze(1))/(similarity.max(1)[0].unsqueeze(1) - similarity.min(1)[0].unsqueeze(1) + cosine_eps)  # prior mask min-max normalization
+               
             corr_query = similarity.view(bsize, 1, sp_sz, sp_sz)                # resize normalized prior mask to (b,1,layer4.h,layer4.h) 
             corr_query = F.interpolate(corr_query, size=mid_query_size, mode='bilinear', align_corners=True) # resize normalized prior mask to (b,1,layer3.h(14),layer3.w(14))
             corr_query_mask_list.append(corr_query)                                 # list normalized prior masks
+        
         corr_query_mask = torch.cat(corr_query_mask_list, 1).mean(1).unsqueeze(1)   # concat normalized prior mask list on (previosuly extended) dim=1, shape (b,self.shot,layer3.h,layer3.w) and calculate mean for dim=1 to form (b,1,layer3.h,layer3.w)   
         corr_query_mask = F.interpolate(corr_query_mask, size=mid_query_size, mode='bilinear', align_corners=True)  # interpolate
         
