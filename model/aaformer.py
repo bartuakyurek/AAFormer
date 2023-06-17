@@ -51,7 +51,7 @@ class AAFormer(nn.Module):
         self.conv3 = nn.Conv2d(c, intermediate_dim, kernel_size=3, stride=1, padding=1, bias=False)
         self.relu = nn.ReLU(inplace=True)
 #        self.conv1 = nn.Conv2d(c//8, 1, kernel_size=3, stride=1, padding=1, bias=False) 
-        self.conv1 = nn.Conv2d(intermediate_dim, 2, kernel_size=1, stride=1, padding=1, bias=False) 
+        self.conv1 = nn.Conv2d(intermediate_dim, 1, kernel_size=1, stride=1, padding=1, bias=False) 
 
         # Note: Output channel is not 3 (rgb), but it is 1 since we are computing a binary mask in the end.
 
@@ -131,7 +131,7 @@ class AAFormer(nn.Module):
 
 #####
         output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
-        output = torch.argmax(output, dim=1)
+        # output = torch.argmax(output, dim=1)
 #####
 
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
@@ -142,4 +142,4 @@ class AAFormer(nn.Module):
 
 #            output = (output - min) / (max - min)
 #            output = torch.where(output >= 0.5, 1.0, 0.0)
-        return output.float()
+        return output#.float()
