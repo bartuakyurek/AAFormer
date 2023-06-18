@@ -67,7 +67,7 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 ## 3.3. Results
 
 Due to the computational limits, we couldn't train for 200 epochs as the paper did. Here we only provide results of 1 epoch training, which took 17 hours on a single GPU trained on Colab's T4. In addition, we provide an overfitting case of a single 1-shot sample, trained for 150 epochs.
-
+Please see our additional visual results at [/imagefolder/additional_results](./imagefolder/additional_results)
 ### 3.3.1 Results of $PASCAL-5^0$ Dataset
 
 
