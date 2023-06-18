@@ -59,7 +59,7 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 
 @TODO: Discuss the paper in relation to the results in the paper and your results.
 
-
+The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for a bit more than 1200 iterations, where every epoch takes about 3000 iterations. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about 17 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
 
 # 5. References
 
