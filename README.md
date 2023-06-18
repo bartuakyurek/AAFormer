@@ -32,17 +32,24 @@ This decoder takes Initial Agent Tokens, Support Masks, as well as Support Featu
 - **Agent Matching Decoder**:
 Both the encoded support and query features with learned agent tokens are passed to the Agent Matching Decoder. In the decoder, the transformer decoder architecture is adopted. The features and the learned agent tokens are fed to the cross-attention layer to form the cross-attention matrices. These matrices are multiplied together and an alignment matrix is used to form the aligned cross attention which rearranges the attention matrix. After that, softmax is calculated for the feedforward network. By the completion of this module, the outputs are available for the prediction task.
 
-- **Prediction**:
+- **Prediction Layer**:
 The last part of the model is the prediction module which employs two convolutional layers and a ReLU activation between them. At the output of the module, the network sequence is completed with a sigmoid function layer to predict the segmentation of the query image. 
 
 ## 2.2. Our interpretation 
 
 Throughout our source code, we have discussed our interpretation and assumptions in detail at the comments starting with "`# Assumption:`".
 
+* **Feature Extraction**: This section of the model is not comprehensively explained in the paper. [5], [6], and [7] have good discussions about the feature extraction procedure. The codework in this section is very dense. We use pre-trained ResNet with 50 layers to obtain the mid ad high layer features of the input and the query images. The prior mask calculation is not given in the paper, but [6] has detailed explanations of the process including the equations. The details of the concatenation are not clear such that in which dimension is to be taken into account. [5] explains the details of ResNet layers to be used to get the outputs concatenated.
+
+* **Representation Encoder**: This part is rather plain than the other parts. This is the standard transformer encoder implementatation. However, there is no information about the positional embedding process. We code in paralled with [4].
 
 * **Initial Agent Tokens**: There are several unclear parts of Algorithm 1 of the supplementary material. First, the definitions $X$ and $L$ are not clear. They are claimed to be the foreground and background pixels' locations set, yet there is no specification about how to obtain them. It can be trivially inferred the masks are where the foreground pixels exists; however, Algorithm 1 is supposed to work in feature space, not the original image space. Therefore, we assume the masks should be interpolated to feature space to obtain foreground pixel locations for $X$. Second, the selection of $x$ in line 3 seems to be unclear, in which we have implemented Algorithm 1 twice to see if one of our assumptions will work. The further information about these assumptions can be tracked from our comments at `tokens.py`.
 
 * **Agent Learning Decoder**: The major change we have in this part is the interpretation of eqn.7. When we trackdown the matrices' dimensionalities, eqn.7 should be $FFN(SV^s)$ instead of $FFN(S)V^s$. We support our claim throughout the comments at `agentlearningdecoder.py` in detail. We assumed that there is a typo in eqn.7, since the same description of eqn.7 is also provided for eqn.12 (and there is a typo in eqn.12 description, $V^s$ is supposed to be $V^q$), which is the same with our claim. For OT algorithm, we have used Python Optimal Transport library (POT) [3].
+
+* **Agent Matching Decoder**: In the Agent Matching Decoder, we take the standard transformer decoder structure as a reference. The tricky part of this module is the alignment matrix calculation which is element-wise with regard to cross-attention matrices. We see that there are some typos in the paper, especially in the equations given in this section.
+
+* **Prediction Layer**: The prediction layer is not sufficiently discussed in the paper. The coarse structure is given yet some layers and the parameters are undefined. There are two convolutional layers, the first has 3x3 kernel, and the second 1x1 kernel. A ReLU activation is placed between them. After the second convolution layer, the output is interpolated in compliance with the original image resolution. For the output of the prediction first, we try a 2-dimensional convolution layer followed by an argmax layer. However, we face some drawbacks for the loss calculation with this setup and changed the last convolutional layer to a single channel followed by a sigmoid layer.   
 
 # 3. Experiments and results
 
