@@ -15,10 +15,11 @@ The objective of few-shot segmentation (FSS) is to segment objects in a given qu
 # 2. The method and our interpretation
 
 ## 2.1. The original method
+![Figure 1](./imagefolder/Figure1.png)
 <img width="720" alt="aaformer" src="https://github.com/bartuakyurek/AAFormer/assets/77360680/eb065407-f6d9-4b23-9605-ff7968164d54">
 
 - **Feature Extraction**:
-The model takes the support and query image features as the inputs. These features are obtained by feeding the images into a pre-trained ResNet model. There are two types of image features for each support and query image: mid-level and high-level features. Mid-level features are the concatenated outputs of block2 and block3 and high-level features are obtained from block4 of ResNet architecture. In the paper performance comparison is presented among different ResNet architectures including 50 and 101 layers. High-level features are given to the **prior mask generator** with the corresponding support masks to form the prior mask. The same support image masks are also imported to the **masked average pooling** module with the mid-level support features. In the output of this module, mid-level query features are concatenated and are passed through a convolutional layer to obtain the final query features which are to be fed to the AAFormer. Like on explained in the query feature gathering branch, the final support level features are found by concatenating the prior mask with mid-level support features and the masked-out versions before the convolutional layer. In addition to final image features, support image masks are the inputs to AAFormer. The structure of this mechanism is given in [Figure 1](.\imagefolder\figure1.png).
+The model takes the support and query image features as the inputs. These features are obtained by feeding the images into a pre-trained ResNet model. There are two types of image features for each support and query image: mid-level and high-level features. Mid-level features are the concatenated outputs of block2 and block3 and high-level features are obtained from block4 of ResNet architecture. In the paper performance comparison is presented among different ResNet architectures including 50 and 101 layers. High-level features are given to the **prior mask generator** with the corresponding support masks to form the prior mask. The same support image masks are also imported to the **masked average pooling** module with the mid-level support features. In the output of this module, mid-level query features are concatenated and are passed through a convolutional layer to obtain the final query features which are to be fed to the AAFormer. Like on explained in the query feature gathering branch, the final support level features are found by concatenating the prior mask with mid-level support features and the masked-out versions before the convolutional layer. In addition to final image features, support image masks are the inputs to AAFormer. The structure of this mechanism is given in [Figure 1](.\imagefolder\Figure1.png).
 
 - **Representation Encoder**:
 The support and query features obtained from pre-trained ResNet are reshaped before passing to the representation encoder. Each feature is fed to its own encoder after calculating the positional embeddings. Both of them are summed up and are used to find the query (Q), key (K), and value (V) matrices. After the softmax calculation of Q and K, V is multiplied to get the attention matrix. After that, it is fed to the feedforward network for the output of the encoder. Therefore, each support and query image features are encoded to proceed with the model.  
@@ -65,15 +66,35 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 
 ## 3.3. Results
 
-@TODO: Present your results and compare them to the original paper. Please number your figures & tables as if this is a paper.
+Due to the computational limits, we couldn't train for 200 epochs as the paper did. Here we only provide results of 1 epoch training, which took 17 hours on a single GPU trained on Colab's T4. In addition, we provide an overfitting case of a single 1-shot sample, trained for 150 epochs.
 
-
-
+### 3.3.1 Results of $PASCAL-5^0$ Dataset
 ```
 table comes here
 ```
 
+![Figure 2](./imagefolder/1000-iter.png)
+Figure.3: Resulting masks at 1000th iteration for a batch size of 4.
 
+![Figure 3](./imagefolder/1000-iter-loss.png)
+Figure.4: Dice loss for 1000 mini-batch iterations (an epoch takes about 3000 iterations). The loss is pretty noisy accross the samples; however, we cannot declare that the model is not learning until we train the model for at least 10-20 epochs.
+
+![Figure 4](./imagefolder/bce-loss.png)
+Figure.5: BCE Training Loss falling trend for 80 mini-batch iterations.
+
+### 3.3.2 Overfitting Results
+
+![Figure 1](./imagefolder/overfit-0.png)
+Figure.6: Overfitting experiment with BCE Loss + Dice Loss
+![Figure 1](./imagefolder/overfit-1.png)
+Figure.7: Overfitting experiment with Dice Loss
+![Figure 1](./imagefolder/overfit-2.png)
+Figure.8: Overfitting experiment with alternating Dice Loss / BCE Loss
+![Figure 1](./imagefolder/visualization.png)
+Figure.9: Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
+
+![Figure 1](./imagefolder/table.png)
+Table.1: Numerical evaluation results, in comparison with original paper's Table.1. Our AAFormer model is trained for 3000 iterations on $PASCAL-5^0$.
 
 # 4. Conclusion
 
