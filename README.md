@@ -21,8 +21,7 @@ The objective of few-shot segmentation (FSS) is to segment objects in agiven que
 @TODO: Explain the original method.
 
 * **Initial Agent Tokens**: 
-Adaptive Agent Transformer, takes an initial set of agent tokens at its Agent Learning Decoder stage. These tokens are initialized according to Algorithm 1, provided by the paper's supplementary material. The tokens are initialized by utilizing the n-shot mask information of the support images such that it will provide a good representation to bridge the information gap between query images and support images at the Agent Learning Decoder module. The tokens are initialized by selecting indices from support features. Specifically, the feature location where the foreground and background pixels' distance optimized is selected for every individual token. 
-
+Adaptive Agent Transformer, takes an initial set of agent tokens at its Agent Learning Decoder stage. These tokens are initialized according to Algorithm 1, provided by the paper's supplementary material. The tokens are initialized by utilizing the n-shot mask information of the support images such that it will provide a good representation to bridge the information gap between query images and support images at the Agent Learning Decoder module. The tokens are initialized by selecting indices from support features. Specifically, the feature location where the foreground and background pixels' distance optimized is selected for every individual token.
 * **Agent Learning Decoder**: takes Initial Agent Tokens, Support Masks, as well as Support Features obtained from Representation Encoder as its input. The aim is to produce Agent Tokens that will bridge the gap between query features and support features such that these features can be aligned by Agent Matching Decoder in the next stage. In order to obtain these Agent Tokens, Initial Agent Tokens are fed into a masked cross-attention module together with Support Features in eqn.3. Then, authors use Optimal Transport (OT) algorithm that condenses the set of agent tokens such that the tokens will be optimally different from each other.
 
 
@@ -30,10 +29,11 @@ Adaptive Agent Transformer, takes an initial set of agent tokens at its Agent Le
 
 @TODO: Explain the parts that were not clearly explained in the original paper and how you interpreted them.
 
-In general, we provided our assumptions throughout the source code via comments starting with "`# Assumption:`".
+Throughout our source code, we have discussed our interpretation and assumptions in detail at the comments starting with "`# Assumption:`".
 
 
-* **Initial Agent Tokens**: The further details of the implementation can be tracked from our comments at `tokens.py`.
+* **Initial Agent Tokens**: There are several unclear parts of Algorithm 1 of the supplementary material. First, the definitions $X$ and $L$ are not clear. They are claimed to be the foreground and background pixels' locations set, yet there is no specification about how to obtain them. It can be trivially inferred the masks are where the foreground pixels exists; however, Algorithm 1 is supposed to work in feature space, not the original image space. Therefore, we assume the masks should be interpolated to feature space to obtain foreground pixel locations for $X$. Second, the selection of $x$ in line 3 seems to be unclear, in which we have implemented Algorithm 1 twice to see if one of our assumptions will work. The further information about these assumptions can be tracked from our comments at `tokens.py`.
+* **Agent Learning Decoder**: 
 
 # 3. Experiments and results
 
