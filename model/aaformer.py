@@ -126,11 +126,12 @@ class AAFormer(nn.Module):
         # output = output.view(batch_size, self.reshaped_channels, self.output_res, self.output_res)
         # Result: loss collapsed after few iterations. Commenting out this experiment...
 
+        #comment out below (and comment above) for interpolation based reshaping.
+        output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
+
         output = self.conv3(output) 
         self.relu(output) # New: inplace=true makes relu operation inplace (tested, verififed). #output = self.relu(output)
         output = self.conv1(output)
-        #comment out below (and comment above) for interpolation based reshaping.
-        output = F.interpolate(output, size=(self.output_res,self.output_res), mode='bilinear', align_corners=True)
 
         # Assumption: There is no specification about how to convert the predictions to segmentation masks. Yet, the predictions are not
         # in range [0,1]. We assumed that we can normalize the predictions to [0,1] range and use a threshold to binarize the prediction.

@@ -22,3 +22,6 @@ runs/AAformer_trainer_20230618_000528/events.out.tfevents.1687035928.DESKTOP-MHO
 runs/AAformer_trainer_20230618_001047/events.out.tfevents.1687036247.DESKTOP-MHO7KM6.3420.1
 runs/AAformer_trainer_20230618_002303/events.out.tfevents.1687036983.DESKTOP-MHO7KM6.11372.0
 model_20230618_013945_0
+vis/0_0_class-0_iou-0.00.jpg
+model_20230618_133903_0
+model_20230618_121129_0

@@ -50,6 +50,7 @@ def init_agent_tokens(device, num_tokens, M_s, f_s):
     c = f_s.shape[-1]
     tokens = torch.empty(batch_size,num_tokens,c)
     
+    """
     for b_ind in range(batch_size):
         #print(X[b_ind].shape)
         #print(L[b_ind].shape)
@@ -95,16 +96,19 @@ def init_agent_tokens(device, num_tokens, M_s, f_s):
                 print(">> ERROR tokens.py: d_x =", d_x.shape)
                 tokens[i,k,:] = torch.randn(c)
                 continue
-
+            
+            # Line 4 of Algorithm 1:
             p_furthest = X[i][p_ind, :]      # This is a location (x,y) of a pixel
             p_star = p_furthest.unsqueeze(0) # [2] --> [1,2] 
-            L_single = torch.cat([L_single, p_star], dim=0) # L = (B) U (P), see line 5 in Algorithm 1
 
+            # Line 5 of Algorithm 1:
+            L_single = torch.cat([L_single, p_star], dim=0) # L = (B) U (P), see line 5 in Algorithm 1
             f_a_k = f_s[i, p_furthest.data[0], p_furthest.data[1], :]
             
+            # We have obtained initial agent token_k! Go back to line 2 of Algorithm 1.
             tokens[i,k,:] = f_a_k
             
         L_new.append(L_single)
-    """
+    
     return tokens
     
