@@ -17,8 +17,7 @@ The objective of few-shot segmentation (FSS) is to segment objects in a given qu
 # 2. The method and our interpretation
 
 ## 2.1. The original method
-
-@TODO: Explain the original method.
+<img width="720" alt="aaformer" src="https://github.com/bartuakyurek/AAFormer/assets/77360680/eb065407-f6d9-4b23-9605-ff7968164d54">
 
 - **Feature Extraction**:
 The model takes the support and query image features as the inputs. These features are obtained by feeding the images into a pre-trained ResNet model. There are two types of image features for each support and query image: mid-level and high-level features. Mid-level features are the concatenated outputs of block2 and block3 and high-level features are obtained from block4 of ResNet architecture. In the paper performance comparison is presented among different ResNet architectures including 50 and 101 layers. High-level features are given to the **prior mask generator** with the corresponding support masks to form the prior mask. The same support image masks are also imported to the **masked average pooling** module with the mid-level support features. In the output of this module, mid-level query features are concatenated and are passed through a convolutional layer to obtain the final query features which are to be fed to the AAFormer. Like on explained in the query feature gathering branch, the final support level features are found by concatenating the prior mask with mid-level support features and the masked-out versions before the convolutional layer. In addition to final image features, support image masks are the inputs to AAFormer. The structure of this mechanism is given in [Figure 1](.\imagefolder\figure1.png).
