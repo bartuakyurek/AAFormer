@@ -20,7 +20,8 @@ def train(
     dataloader_val,
     loss_batch = 10,
     device = "cpu",
-    use_dice_loss = True
+    use_dice_loss = True,
+    overfit = False,
 ):
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -46,37 +47,38 @@ def train(
                  
         running_vloss = 0.0
         
-        # Set the model to evaluation mode
-        model.eval()
+        if not overfit:
+            # Set the model to evaluation mode
+            model.eval()
 
-        # Disable gradient computation and reduce memory consumption.
-        with torch.no_grad():
-            for i, vdata in enumerate(dataloader_val):
-                v_query_img = vdata['query_img'].to(device)
-                v_query_mask = vdata['query_mask'].to(device)
-                v_supp_imgs = vdata['support_imgs'].to(device)
-                v_supp_masks = vdata['support_masks'].to(device)
+            # Disable gradient computation and reduce memory consumption.
+            with torch.no_grad():
+                for i, vdata in enumerate(dataloader_val):
+                    v_query_img = vdata['query_img'].to(device)
+                    v_query_mask = vdata['query_mask'].to(device)
+                    v_supp_imgs = vdata['support_imgs'].to(device)
+                    v_supp_masks = vdata['support_masks'].to(device)
 
-                voutputs = model(v_query_img, v_supp_imgs, v_supp_masks, normalize=use_dice_loss)
+                    voutputs = model(v_query_img, v_supp_imgs, v_supp_masks, normalize=use_dice_loss)
 
-                vloss = loss_fn(voutputs, v_query_mask.unsqueeze(1))
-                running_vloss += vloss
+                    vloss = loss_fn(voutputs, v_query_mask.unsqueeze(1))
+                    running_vloss += vloss
 
-        avg_vloss = running_vloss / (i + 1)
-        print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
+            avg_vloss = running_vloss / (i + 1)
+            print('LOSS train {} valid {}'.format(avg_loss, avg_vloss))
 
-        # Log the running loss averaged per batch
-        # for both training and validation
-        writer.add_scalars('Training vs. Validation Loss',
-                        { 'Training' : avg_loss, 'Validation' : avg_vloss },
-                        epoch_number + 1)
-        writer.flush()
+            # Log the running loss averaged per batch
+            # for both training and validation
+            writer.add_scalars('Training vs. Validation Loss',
+                            { 'Training' : avg_loss, 'Validation' : avg_vloss },
+                            epoch_number + 1)
+            writer.flush()
 
-        # Track best performance, and save the model's state
-        if avg_vloss < best_vloss:
-            best_vloss = avg_vloss
-            model_path = 'model_{}_{}'.format(timestamp, epoch_number)
-            #torch.save(model.state_dict(), model_path)
-            torch.save(model, model_path)
+            # Track best performance, and save the model's state
+            if avg_vloss < best_vloss:
+                best_vloss = avg_vloss
+                model_path = 'model_{}_{}'.format(timestamp, epoch_number)
+                #torch.save(model.state_dict(), model_path)
+                torch.save(model, model_path)
         
         epoch_number += 1
