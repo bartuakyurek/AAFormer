@@ -29,6 +29,7 @@ class FSSDataset:
                                             transforms.ToTensor(),
                                             transforms.Normalize(cls.img_mean, cls.img_std)])
 
+        cls.dataset = None  # Edit
     @classmethod
     def build_dataloader(cls, benchmark, bsz, nworker, fold, split, shot=1, overfit=-1): # Edit: added overfit parameter. -1: use original, 0: single class, 1: single sample
         # Force randomness during training for diverse episode combinations
@@ -39,4 +40,5 @@ class FSSDataset:
         dataset = cls.datasets[benchmark](cls.datapath, fold=fold, transform=cls.transform, split=split, shot=shot, use_original_imgsize=cls.use_original_imgsize,overfit=overfit)
         dataloader = DataLoader(dataset, batch_size=bsz, shuffle=shuffle, num_workers=nworker)
 
+        cls.dataset = dataset # Edit
         return dataloader
