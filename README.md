@@ -10,7 +10,7 @@ In this paper, authors aim to address a few-shot segmentation (FSS) problem. The
 ## 1.1. Paper summary
 
 
-The objective of few-shot segmentation (FSS) is to segment objects in a given query image with the support of a few sample images. The major complication of FSS is the utilization of the limited information the support images incorporate. Some of the methods in the literature adopt prototypical learning or affinity learning strategies. Prototypical learning methods use masked average pooling to achieve a single prototype  to anticipate outperforming with noisy pixels while the affinity learning methods attempt to leverage pixel-to-pixel similarity between support and query features for segmentation. The proposed method in the paper (**AAFormer**) integrates the adaptive prototypes as agents into affinity-based FSS via a transformer encoder-decoder architecture. The transformers architecture has three main parts. The first part is the **Representation Encoder** which is very similar to the encoder part of the standard [transformer](https://arxiv.org/abs/1706.03762) structure which employs the self-attention mechanism for the query and support features separately and outputs the encoded support and query features to be fed to the **Agent Learning Decoder**. This is one of the two decoders in the model which injects the support information into learning agents to direct the information gathered with support images to the query image. The other decoder is the **Agent Matching Decoder** which yields the retrieved features after crossing the agent tokens with support and query features and aligning the outputs of them. [1]  
+The objective of few-shot segmentation (FSS) is to segment objects in a given query image with the support of a few sample images. The major complication of FSS is the utilization of the limited information the support images incorporate. Some of the methods in the literature adopt prototypical learning or affinity learning strategies. Prototypical learning methods use masked average pooling to achieve a single prototype  to anticipate outperforming with noisy pixels while the affinity learning methods attempt to leverage pixel-to-pixel similarity between support and query features for segmentation. The proposed method in the paper (**AAFormer**) integrates the adaptive prototypes as agents into affinity-based FSS via a transformer encoder-decoder architecture. The transformers architecture has three main parts. The first part is the **Representation Encoder** which is very similar to the encoder part of the standard transformer structure [4] which employs the self-attention mechanism for the query and support features separately and outputs the encoded support and query features to be fed to the **Agent Learning Decoder**. This is one of the two decoders in the model which injects the support information into learning agents to direct the information gathered with support images to the query image. The other decoder is the **Agent Matching Decoder** which yields the retrieved features after crossing the agent tokens with support and query features and aligning the outputs of them. [1]  
 
 # 2. The method and our interpretation
 
@@ -66,7 +66,13 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 
 ## 3.3. Results
 
-![example](./imagefolder/additional_results/bicycle-5-shot.jpg)
+![example_1](./imagefolder/additional_results/bicycle-5-shot.jpg)
+![example_2](./imagefolder/additional_results/class-2_iou-0.16.jpg)
+![example_3](./imagefolder/additional_results/class-3_iou-0.03.jpg)
+![example_4](./imagefolder/additional_results/class-0_iou-0.16.jpg)
+![example_5](./imagefolder/additional_results/class-4_iou-0.16.jpg)
+
+
 
 **Figure 3:** Result from **iteration 2845** of AAFormer model trained on  $PASCAL-5^i$ dataset at $i=0$ fold. First five with blue masks: support images. Last two with red masks: prediction and ground truth.
 
@@ -113,9 +119,11 @@ Please see our additional visual results at [/imagefolder/additional_results](./
 
 # 4. Conclusion
 
-The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for about 3000 iterations, which is almost 1 epoch. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about 17 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. A similar problem also exists with OT algorithm used by the paper, which we assume should be computed for every sample separately as also discussed in our source code comments. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
+The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for about 3000 iterations, which is almost 1 epoch. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about ~7 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. A similar problem also exists with OT algorithm used by the paper, which we assume should be computed for every sample separately as also discussed in our source code comments. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
 
 To compensate the computational efficiency problem, we provide results of our overfitting experiments computed by a single 1-shot sample of $PASCAL-5^i$ dataset. After training for 150 epochs, the model seems like to converge a solution that resembles the segmentation mask we would like to obtain. From the results listed in Table 1, and comparing with the Table 1 of original paper, we can observe that our overfitting results are getting closer to state-of-the-art models, which can indicate a potential learning capability of the reproduced AAFormer model. 
+
+Another implication that we have experienced is choosing the loss function. We have tried binary cross entropy (BCE) loss and dice loss for differet train runs. Due to the loss calculation for the predicted and the target binary masks, BCE implemetation seems like a reasonable choice. However, we conclude that the proceeding trainin iterations with BCE loss converges where the predicted masks become invisible. Alternatively we used dice loss, which calculates simply the ratio of intersection and the union of the predicted and the target masks and it optimizes the model with stability.
 
 The few-shot segmentation problem is an interesting and challenging problem, and AAFormer model claims to improve state-of-the-art models with its Adaptive Agent scheme. However, the reproduction of AAFormer model is also challenging with additional computational complexities. In conclusion, we have built a naive implementation of AAFormer based on the information provided by the original paper and since our implementation takes about 17 hours per epoch, we provide our best results from an overfitting case, together with numerical evaluations of mIoU and FB-IoU metrics.
 
@@ -129,13 +137,13 @@ The few-shot segmentation problem is an interesting and challenging problem, and
 [3] [Python Optimal Transport: POT](https://pythonot.github.io/) R ́emi Flamary, Nicolas Courty, Alexandre Gramfort, Mokhtar Z. Alaya, Aur ́elie Boisbunon, Stanislas Chambon, Laetitia Chapel, Adrien Corenflos, Kilian Fatras, Nemo Fournier, L ́eo
 Gautheron, Nathalie T.H. Gayraud, Hicham Janati, Alain Rakotomamonjy, Ievgen Redko, Antoine Rolet, Antony Schutz, Vivien Seguy, Danica J. Sutherland, Romain Tavenard, Alexander Tong, and Titouan Vayer. Pot: Python optimal transport. Journal of Machine Learning Research, 22(78):1–8, 2021.
 
-[4] [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+[4] Vaswani, Ashish, et al. "Attention is all you need." Advances in neural information processing systems 30 (2017).
 
-[5] [PANet: Few-Shot Image Semantic Segmentation with Prototype Alignment](https://arxiv.org/pdf/1908.06391.pdf)
+[5] Wang, Kaixin, et al. "Panet: Few-shot image semantic segmentation with prototype alignment." proceedings of the IEEE/CVF international conference on computer vision. 2019.
 
-[6] [SG-One: Similarity Guidance Network for One-Shot Semantic Segmentation](https://arxiv.org/pdf/1810.09091.pdf)
+[6] Zhang, Xiaolin, et al. "Sg-one: Similarity guidance network for one-shot semantic segmentation." IEEE transactions on cybernetics 50.9 (2020): 3855-3865.
 
-[7] [CANet: Class-Agnostic Segmentation Networks with Iterative Refinement and Attentive Few-Shot Learning](https://arxiv.org/pdf/1903.02351.pdf)
+[7] Zhang, Chi, et al. "Canet: Class-agnostic segmentation networks with iterative refinement and attentive few-shot learning." Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2019.
 
 # Contact
 
