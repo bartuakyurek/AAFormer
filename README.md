@@ -69,6 +69,13 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 
 @TODO: Present your results and compare them to the original paper. Please number your figures & tables as if this is a paper.
 
+
+```
+table comes here
+```
+
+
+
 # 4. Conclusion
 
 @TODO: Discuss the paper in relation to the results in the paper and your results.
@@ -92,5 +99,6 @@ The few-shot segmentation problem is an interesting and challenging problem, and
 @TODO: Provide your names & email addresses and any other info with which people can contact you.
 
 Yusuf Soydan, yusuf.soydan@metu.edu.tr
+
 Bartu Akyürek, bartu.akyurek@metu.edu.tr
 
