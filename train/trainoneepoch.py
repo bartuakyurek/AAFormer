@@ -11,7 +11,7 @@ from train.plot import image_plot
 def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss_batch, tb_writer, device, use_dice_loss):
     running_loss = 0.
     last_loss = 0.
-
+    
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
@@ -24,20 +24,13 @@ def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss
         supp_imgs = batch['support_imgs'].to(device)
         supp_masks = batch['support_masks'].to(device)
             
-                
-        
         # Zero your gradients for every batch!
         optimizer.zero_grad()
         
         # STEP 1: Get predicted mask
-        #try:
         outputs = model(query_img, supp_imgs, supp_masks, normalize=use_dice_loss)
-        #except:
-        #    print(">> Unexpected error occured, skipping this batch...")
-        #    continue
         
         # STEP 2: Compute loss (dice or cross entropy)
-        
         #if use_dice_loss:
         loss = loss_fn(outputs, query_mask.unsqueeze(1))#.requiresgrad(True)
         #else:
