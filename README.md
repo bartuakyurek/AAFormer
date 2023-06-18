@@ -39,8 +39,6 @@ The last part of the model is the prediction module which employs two convolutio
 
 ## 2.2. Our interpretation 
 
-@TODO: Explain the parts that were not clearly explained in the original paper and how you interpreted them.
-
 Throughout our source code, we have discussed our interpretation and assumptions in detail at the comments starting with "`# Assumption:`".
 
 
@@ -52,15 +50,11 @@ Throughout our source code, we have discussed our interpretation and assumptions
 
 ## 3.1. Experimental setup
 
-@TODO: Describe the setup of the original paper and whether you changed any settings.
-
 We have implemented the setup of the original paper as closely as we could. The settings we have changed can be reviewed from the source code comments in detail. The paper uses 473 image resolution; however, we set the resolution to a lower value, i.e. 128 for our experiments. We provide our hyperparameters explicitly in `main.ipynb` and their values provided by the original paper and state the hyperparameters that are not mentioned in the paper. In addition to Dice Loss used by the original paper, we have also experimented with Binary Cross Entropy (BCE) Loss that is not used by the paper. 
 
-We use `ResNet-50` as our backbone, where we also provide other ResNet options such as `ResNet-101`. The original paper uses the both in their ablation studies. For the datasets, we only experiment with $PASCAL-5^i$ which has 4 folds for cross-validation where $i$ denote the fold index, and every fold has 5 classes. We only experimented with the "fold0", i.e. we used $PASCAL 5^0$ (refer to Table 1's notation in original paper).
+We use `ResNet-50` as our backbone, where we also provide other ResNet options such as `ResNet-101`. The original paper uses the both in their ablation studies. For the datasets, we only experiment with $PASCAL-5^i$ which has 4 folds for cross-validation where $i$ denote the fold index, and every fold has 5 classes. We only experimented with the "fold0", i.e. we used $PASCAL 5^0$ (refer to Table 1's notation in original paper). We have experimented with 3-shot and 5-shot settings for $PASCAL-5^0$ Dataset. We also added an overfitting option to dataloaders that takes only one n-shot sample, and we run the overfitting experiment with 1-shot setting.
 
 ## 3.2. Running the code
-
-@TODO: Explain your code & directory structure and how other people can run it.
 
 Our main file is `main.ipynb` where we declare step by step code cells to run our code. Please refer to "Prepare Dataset" section's comments to review the steps of downloading and placing the dataset. PASCAL VOC2012 dataset can be downloaded [from here](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar) and the SBD extension is provided by [here](https://drive.google.com/file/d/10zxG2VExoEZUeyQl_uXga2OWHjGeZaf2/view) [2]. Extract the SBD extension's "SegmentationClassAug" folder inside "VOC2012" folder, and put "VOC2012" folder inside a folder named "Datasets". Finally, "Datasets" folder should be in the "AAFormer" folder (which contains this repo's source) if you are working on Colab, or it should be in the same directory with "AAformer" (i.e. not inside of AAFormer) if you will run the notebook on your local. After setting up the dataset, you should be able to run the notebook smoothly.
 
@@ -79,9 +73,9 @@ table comes here
 
 @TODO: Discuss the paper in relation to the results in the paper and your results.
 
-The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for a bit more than 1200 iterations, where every epoch takes about 3000 iterations. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about 17 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. A similar problem also exists with OT algorithm used by the paper, which we assume should be computed for every sample separately as also discussed in our source code comments. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
+The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for about 3000 iterations, which is almost 1 epoch. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about 17 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. A similar problem also exists with OT algorithm used by the paper, which we assume should be computed for every sample separately as also discussed in our source code comments. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
 
-To compensate the computational efficiency problem, we provide results of our overfitting experiments computed by a single 1-shot sample of $PASCAL-5^i$ dataset. After training for 150 epochs, the model seems like to converge a solution that resembles the segmentation mask we would like to obtain.
+To compensate the computational efficiency problem, we provide results of our overfitting experiments computed by a single 1-shot sample of $PASCAL-5^i$ dataset. After training for 150 epochs, the model seems like to converge a solution that resembles the segmentation mask we would like to obtain. From the results listed in Table 1, and comparing with the Table 1 of original paper, we can observe that our overfitting results are getting closer to state-of-the-art models, which can indicate a potential learning capability of the reproduced AAFormer model. 
 
 The few-shot segmentation problem is an interesting and challenging problem, and AAFormer model claims to improve state-of-the-art models with its Adaptive Agent scheme. However, the reproduction of AAFormer model is also challenging with additional computational complexities. In conclusion, we have built a naive implementation of AAFormer based on the information provided by the original paper and since our implementation takes about 17 hours per epoch, we provide our best results from an overfitting case, together with numerical evaluations of mIoU and FB-IoU metrics.
 
