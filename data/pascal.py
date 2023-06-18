@@ -1,5 +1,11 @@
-r""" PASCAL-5i few-shot semantic segmentation dataset """
+""" PASCAL-5i few-shot semantic segmentation dataset 
+
+    DISCLAIMER: This file is adopted from https://github.com/juhongm999/hsnet
+    However, we have modified it according to our needs. See the comments with "edit".
+
+"""
 import os
+from re import I
 
 from torch.utils.data import Dataset
 import torch.nn.functional as F
@@ -9,10 +15,10 @@ import numpy as np
 
 
 class DatasetPASCAL(Dataset):
-    def __init__(self, datapath, fold, transform, split, shot, use_original_imgsize):
+    def __init__(self, datapath, fold, transform, split, shot, use_original_imgsize, overfit=-1):
 
         #super().__init__()
-
+    
         self.split = 'val' if split in ['val', 'test'] else 'trn'
         self.fold = fold
         self.nfolds = 4
@@ -25,9 +31,18 @@ class DatasetPASCAL(Dataset):
         self.ann_path = os.path.join(datapath, 'VOC2012','SegmentationClassAug')
         self.transform = transform
 
+        # Edit
+        self.overfit = overfit
+        if overfit != -1:
+            self.nfolds = 1
+            self.nclass = 1
+        # End of edit.
+
         self.class_ids = self.build_class_ids()
         self.img_metadata = self.build_img_metadata()
         self.img_metadata_classwise = self.build_img_metadata_classwise()
+
+        
 
     def __len__(self):
         return len(self.img_metadata) if self.split == 'trn' else 1000
@@ -120,7 +135,13 @@ class DatasetPASCAL(Dataset):
     def build_img_metadata(self):
 
         def read_metadata(split, fold_id):
-            fold_n_metadata = os.path.join('data','splits','pascal','%s' % split,'fold%d.txt' % fold_id)
+            pascal_path = 'pascal'          # Edit
+            if self.overfit == 0:
+                pascal_path = 'pascal_overfit_single_class'
+            if self.overfit == 1:
+                pascal_path = 'pascal_overfit_single_sample'
+
+            fold_n_metadata = os.path.join('data','splits',pascal_path,'%s' % split,'fold%d.txt' % fold_id)
             with open(fold_n_metadata, 'r') as f:
                 fold_n_metadata = f.read().split('\n')[:-1]
             fold_n_metadata = [[data.split('__')[0], int(data.split('__')[1]) - 1] for data in fold_n_metadata]
@@ -130,7 +151,10 @@ class DatasetPASCAL(Dataset):
         if self.split == 'trn':  # For training, read image-metadata of "the other" folds
             for fold_id in range(self.nfolds):
                 if fold_id == self.fold:  # Skip validation fold
-                    continue
+                    # Edit:
+                    if self.overfit == -1:
+                    # End of edit.
+                        continue
                 img_metadata += read_metadata(self.split, fold_id)
         elif self.split == 'val':  # For validation, read image-metadata of "current" fold
             img_metadata = read_metadata(self.split, self.fold)

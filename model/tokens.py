@@ -20,13 +20,13 @@ from scipy.spatial.distance import cdist
 # L --> list[batchsize, num_background_pixels, 2] last dimension is (x,y) location
 # f_s --> tensor(batchsize, h, w, c) 
 # "h, w denote the height, width of the feature map." (Supplementary Material)
-def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
-  
+def init_agent_tokens(device, num_tokens, M_s, f_s):
+    
     # Compute euclidean distance between every pair
     # (foreground_pixel, bacground_pixel)
     # in total, |X| x |L| pairs
     #dists_batch = torch.cdist(X, L)   # Get all the distances for K support ims
-    
+    X, L = [], []
     batch_size, _, _ = M_s.shape
     for b in range(batch_size):
         # M_s.shape = (batchsize, layer4.h, layer4.w)
@@ -53,7 +53,7 @@ def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
     for b_ind in range(batch_size):
         #print(X[b_ind].shape)
         #print(L[b_ind].shape)
-        dist_mat = torch.from_numpy(cdist(X[b_ind], L[b_ind], 'euclidean')) # dist_mat 
+        dist_mat = torch.from_numpy(cdist(X[b_ind].cpu(), L[b_ind].cpu(), 'euclidean')).to(device) # dist_mat 
         #print(dist_mat.shape)
         p_x = int(np.random.uniform(low=0, high=X[b_ind].shape[0], size=None))
         #print("")
@@ -74,7 +74,6 @@ def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
 
    
     """
-    # tokens = torch.empty((len(X), num_tokens, f_s.shape[1]))
     L_new = []
     # TODO: can we compute this jointly for all images in a batch?
     for i in range(len(X)):
@@ -94,6 +93,8 @@ def init_agent_tokens(device, num_tokens, M_s, X, L, f_s):
                 _ , p_ind = torch.max(d_x, dim=0)
             except:
                 print(">> ERROR tokens.py: d_x =", d_x.shape)
+                tokens[i,k,:] = torch.randn(c)
+                continue
 
             p_furthest = X[i][p_ind, :]      # This is a location (x,y) of a pixel
             p_star = p_furthest.unsqueeze(0) # [2] --> [1,2] 

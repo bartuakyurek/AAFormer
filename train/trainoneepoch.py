@@ -23,6 +23,7 @@ def train_one_epoch(model, optimizer, epoch_index, dataloader_trn, loss_fn, loss
         query_mask = batch['query_mask'].to(device)
         supp_imgs = batch['support_imgs'].to(device)
         supp_masks = batch['support_masks'].to(device)
+            
                 
         
         # Zero your gradients for every batch!

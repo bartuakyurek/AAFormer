@@ -78,5 +78,5 @@ def train(
             model_path = 'model_{}_{}'.format(timestamp, epoch_number)
             #torch.save(model.state_dict(), model_path)
             torch.save(model, model_path)
-
+        
         epoch_number += 1
