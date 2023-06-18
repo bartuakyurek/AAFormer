@@ -98,7 +98,7 @@ Due to the computational limits, we couldn't train for 200 epochs as the paper d
 **Figure.8:** Overfitting experiment with alternating Dice Loss / BCE Loss
 
 
-![Figure 9](./imagefolder/visualization.png)
+![Figure 9](./imagefolder/visualization.jpg)
 
 **Figure.9:** Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
 
