@@ -66,6 +66,11 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 
 ## 3.3. Results
 
+![example](./imagefolder/additional_results/bicycle-5-shot.jpg)
+
+**Figure 3:** Result from **iteration 2845** of AAFormer model trained on  $PASCAL-5^i$ dataset at $i=0$ fold. First five with blue masks: support images. Last two with red masks: prediction and ground truth.
+
+
 Due to the computational limits, we couldn't train for 200 epochs as the paper did. Here we only provide results of 1 epoch training, which took 17 hours on a single GPU trained on Colab's T4. In addition, we provide an overfitting case of a single 1-shot sample, trained for 150 epochs.
 Please see our additional visual results at [/imagefolder/additional_results](./imagefolder/additional_results).
 ### 3.3.1 Results of $PASCAL-5^0$ Dataset
@@ -73,34 +78,34 @@ Please see our additional visual results at [/imagefolder/additional_results](./
 
 ![Figure 2](./imagefolder/1000-iter.png)
 
-**Figure.3:** Resulting masks at 1000th iteration for a batch size of 4.
+**Figure.4:** Resulting masks at 1000th iteration for a batch size of 4.
 
 ![Figure 3](./imagefolder/1000-iter-loss.png)
 
-**Figure.4:** Dice loss for 1000 mini-batch iterations (an epoch takes about 3000 iterations). The loss is pretty noisy accross the samples; however, we cannot declare that the model is not learning until we train the model for at least 10-20 epochs.
+**Figure.5:** Dice loss for 1000 mini-batch iterations (an epoch takes about 3000 iterations). The loss is pretty noisy accross the samples; however, we cannot declare that the model is not learning until we train the model for at least 10-20 epochs.
 
 ![Figure 4](./imagefolder/bce-loss.png)
 
-**Figure.5:** BCE Training Loss falling trend for 80 mini-batch iterations.
+**Figure.6:** BCE Training Loss falling trend for 80 mini-batch iterations.
 
 ### 3.3.2 Overfitting Results
 
 ![Figure 1](./imagefolder/overfit-0.png)
 
-**Figure.6:** Overfitting experiment with BCE Loss + Dice Loss
+**Figure.7:** Overfitting experiment with BCE Loss + Dice Loss
 
 ![Figure 1](./imagefolder/overfit-1.png)
 
-**Figure.7:** Overfitting experiment with Dice Loss
+**Figure.8:** Overfitting experiment with Dice Loss
 
 ![Figure 1](./imagefolder/overfit-2.png)
 
-**Figure.8:** Overfitting experiment with alternating Dice Loss / BCE Loss
+**Figure.9:** Overfitting experiment with alternating Dice Loss / BCE Loss
 
 
 ![Figure 9](./imagefolder/visualization.jpg)
 
-**Figure.9:** Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
+**Figure.10:** Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
 
 ![Figure 1](./imagefolder/table.png)
 
