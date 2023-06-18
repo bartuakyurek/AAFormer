@@ -69,36 +69,43 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 Due to the computational limits, we couldn't train for 200 epochs as the paper did. Here we only provide results of 1 epoch training, which took 17 hours on a single GPU trained on Colab's T4. In addition, we provide an overfitting case of a single 1-shot sample, trained for 150 epochs.
 
 ### 3.3.1 Results of $PASCAL-5^0$ Dataset
-```
-table comes here
-```
+
 
 ![Figure 2](./imagefolder/1000-iter.png)
-Figure.3: Resulting masks at 1000th iteration for a batch size of 4.
+
+**Figure.3:** Resulting masks at 1000th iteration for a batch size of 4.
 
 ![Figure 3](./imagefolder/1000-iter-loss.png)
-Figure.4: Dice loss for 1000 mini-batch iterations (an epoch takes about 3000 iterations). The loss is pretty noisy accross the samples; however, we cannot declare that the model is not learning until we train the model for at least 10-20 epochs.
+
+**Figure.4:** Dice loss for 1000 mini-batch iterations (an epoch takes about 3000 iterations). The loss is pretty noisy accross the samples; however, we cannot declare that the model is not learning until we train the model for at least 10-20 epochs.
 
 ![Figure 4](./imagefolder/bce-loss.png)
-Figure.5: BCE Training Loss falling trend for 80 mini-batch iterations.
+
+**Figure.5:** BCE Training Loss falling trend for 80 mini-batch iterations.
 
 ### 3.3.2 Overfitting Results
 
 ![Figure 1](./imagefolder/overfit-0.png)
-Figure.6: Overfitting experiment with BCE Loss + Dice Loss
+
+**Figure.6:** Overfitting experiment with BCE Loss + Dice Loss
+
 ![Figure 1](./imagefolder/overfit-1.png)
-Figure.7: Overfitting experiment with Dice Loss
+
+**Figure.7:** Overfitting experiment with Dice Loss
+
 ![Figure 1](./imagefolder/overfit-2.png)
-Figure.8: Overfitting experiment with alternating Dice Loss / BCE Loss
+
+**Figure.8:** Overfitting experiment with alternating Dice Loss / BCE Loss
+
 ![Figure 1](./imagefolder/visualization.png)
-Figure.9: Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
+
+**Figure.9:** Visualization of overfitted model's mask. Here we can observe the model's attempt to separate the plane with people occlusion.
 
 ![Figure 1](./imagefolder/table.png)
-Table.1: Numerical evaluation results, in comparison with original paper's Table.1. Our AAFormer model is trained for 3000 iterations on $PASCAL-5^0$.
+
+**Table.1:** Numerical evaluation results, in comparison with original paper's Table.1. Our AAFormer model is trained for 3000 iterations on $PASCAL-5^0$.
 
 # 4. Conclusion
-
-@TODO: Discuss the paper in relation to the results in the paper and your results.
 
 The major difficulty we have faced is the speed of the algorithms used by the paper. Original paper trains AAFormer for 200 epochs whereas we could train the model for about 3000 iterations, which is almost 1 epoch. We believe our implementation can converge to similar results to the paper if it can be trained for longer. However, one epoch of our current implementation takes about 17 hours. One of the major drawbacks is the usage of foreground pixels explicitly, where every image has different number of foreground pixels and by definition, we cannot stack them in a single tensor. Therefore, we believe further details of foreground pixel computation should be provided by the supplementary material such that we can implement the algorithm efficiently. A similar problem also exists with OT algorithm used by the paper, which we assume should be computed for every sample separately as also discussed in our source code comments. Even though we have completed the implementation of every section given in the paper, the lack of parallelism in some algorithms becomes a major drawback to reproduce the results of the paper.
 
