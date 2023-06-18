@@ -124,6 +124,11 @@ The few-shot segmentation problem is an interesting and challenging problem, and
 [3] R ́emi Flamary, Nicolas Courty, Alexandre Gramfort, Mokhtar Z. Alaya, Aur ́elie Boisbunon, Stanislas Chambon, Laetitia Chapel, Adrien Corenflos, Kilian Fatras, Nemo Fournier, L ́eo
 Gautheron, Nathalie T.H. Gayraud, Hicham Janati, Alain Rakotomamonjy, Ievgen Redko, Antoine Rolet, Antony Schutz, Vivien Seguy, Danica J. Sutherland, Romain Tavenard, Alexander Tong, and Titouan Vayer. Pot: Python optimal transport. Journal of Machine Learning Research, 22(78):1–8, 2021.
 
+[4] [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+[5] [PANet: Few-Shot Image Semantic Segmentation with Prototype Alignment](https://arxiv.org/pdf/1908.06391.pdf)
+[6] [SG-One: Similarity Guidance Network for One-Shot Semantic Segmentation](https://arxiv.org/pdf/1810.09091.pdf)
+[7] [CANet: Class-Agnostic Segmentation Networks with Iterative Refinement and Attentive Few-Shot Learning](https://arxiv.org/pdf/1903.02351.pdf)
+
 # Contact
 
 
