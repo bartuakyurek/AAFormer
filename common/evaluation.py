@@ -1,4 +1,8 @@
-r""" Evaluate mask prediction """
+""" Evaluate mask prediction 
+
+    DISCLAIMER: This file is adopted from https://github.com/juhongm999/hsnet
+
+"""
 import torch
 
 

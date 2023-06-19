@@ -1,4 +1,8 @@
-r""" COCO-20i few-shot semantic segmentation dataset """
+""" COCO-20i few-shot semantic segmentation dataset 
+
+    DISCLAIMER: This file is adopted from https://github.com/juhongm999/hsnet
+
+"""
 import os
 import pickle
 

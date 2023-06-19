@@ -1,4 +1,8 @@
-r""" Helper functions """
+""" Helper functions 
+
+    DISCLAIMER: This file is adopted from https://github.com/juhongm999/hsnet
+
+"""
 import random
 
 import torch

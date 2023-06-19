@@ -1,4 +1,9 @@
-r""" Visualize model predictions """
+""" Visualize model predictions 
+
+    DISCLAIMER: This file is adopted from https://github.com/juhongm999/hsnet
+
+"""
+
 import os
 
 from PIL import Image
