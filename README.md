@@ -84,7 +84,7 @@ Our main file is `main.ipynb` where we declare step by step code cells to run ou
 ![example_1](./imagefolder/additional_results/3-shot-4.jpg)
 ![example_1](./imagefolder/additional_results/3-shot-5.jpg)
 
-**Figure 3.2:** Results from 1-shot setting, **iteration 600** of AAFormer model trained on  $PASCAL-5^i$ dataset at $i=0$ fold. First three with blue masks: support images. Last two with red masks: prediction and ground truth.
+**Figure 3.2:** Results from 3-shot setting, **iteration 600** of AAFormer model trained on  $PASCAL-5^i$ dataset at $i=0$ fold. First three with blue masks: support images. Last two with red masks: prediction and ground truth.
 
 
 Due to the computational limits, we couldn't train for 200 epochs as the paper did. Here we only provide results of 1 epoch training, which took 17 hours on a single GPU trained on Colab's T4. In addition, we provide an overfitting case of a single 1-shot sample, trained for 150 epochs.
